@@ -33,6 +33,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.wear.ambient.AmbientModeSupport
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import org.cagnulein.qzwearos.AmbientEvent
 import org.cagnulein.qzwearos.ExerciseService
 import org.cagnulein.qzwearos.ExerciseServiceConnection
@@ -45,6 +47,8 @@ import org.cagnulein.qzwearos.formatCalories
 import org.cagnulein.qzwearos.formatDistanceKm
 import org.cagnulein.qzwearos.formatElapsedTime
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -52,6 +56,10 @@ import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import com.google.android.gms.wearable.DataClient
+import com.google.android.gms.wearable.DataItem
+import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.Wearable
 
 /**
  * Fragment showing the exercise controls and current exercise metrics.
@@ -245,6 +253,7 @@ class ExerciseFragment : Fragment() {
         latestMetrics.getData(DataType.HEART_RATE_BPM).let {
             if (it.isNotEmpty()) {
                 binding.heartRateText.text = it.last().value.roundToInt().toString()
+                sendHeartRateToPhone(it.last().value.roundToInt())
             }
         }
         latestMetrics.getData(DataType.DISTANCE_TOTAL)?.let {
@@ -252,6 +261,21 @@ class ExerciseFragment : Fragment() {
         }
         latestMetrics.getData(DataType.CALORIES_TOTAL)?.let {
             binding.caloriesText.text = formatCalories(it.total)
+        }
+    }
+
+    fun sendHeartRateToPhone(heartRate: Int) {
+        val dataClient: DataClient = Wearable.getDataClient(activity)
+
+        val putDataMapRequest = PutDataMapRequest.create("/qz")
+        putDataMapRequest.dataMap.putInt("heart_rate", heartRate)
+
+        val task: Task<DataItem> = dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
+
+        try {
+            Tasks.await(task)
+        } catch (exception: Exception) {
+            // Handle any exceptions that might occur while awaiting the task
         }
     }
 

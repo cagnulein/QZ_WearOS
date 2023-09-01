@@ -1360,3 +1360,4 @@ app/build/generated/data_binding_base_class_source_out/debug/out/org/cagnulein/q
 app/build/generated/data_binding_base_class_source_out/debug/out/org/cagnulein/qzwearos/databinding/FragmentPrepareBinding.java
 app/build/generated/data_binding_base_class_source_out/debug/out/org/cagnulein/qzwearos/databinding/FragmentStartupBinding.java
 app/build/generated/hilt/component_sources/debug/org/cagnulein/qzwearos/DaggerMainApplication_HiltComponents_SingletonC.java
+.idea/vcs.xml
