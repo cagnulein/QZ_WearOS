@@ -16,12 +16,20 @@
 
 package org.cagnulein.qzwearos
 
+import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.health.services.client.data.DataPointContainer
@@ -65,7 +73,7 @@ import com.google.android.gms.wearable.Wearable
  * Fragment showing the exercise controls and current exercise metrics.
  */
 @AndroidEntryPoint
-class ExerciseFragment : Fragment() {
+class ExerciseFragment : Fragment(), SensorEventListener {
 
     @Inject
     lateinit var healthServicesManager: HealthServicesManager
@@ -86,6 +94,11 @@ class ExerciseFragment : Fragment() {
     private lateinit var ambientController: AmbientModeSupport.AmbientController
     private lateinit var ambientModeHandler: AmbientModeHandler
 
+    private var android9 = false
+    private lateinit var mSensorManager: SensorManager
+    private var mSensors: Sensor? = null
+
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -97,6 +110,16 @@ class ExerciseFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        if(Build.VERSION.SDK_INT < 30) {
+            android9 = true
+            mSensorManager = requireActivity().getSystemService(Context.SENSOR_SERVICE) as SensorManager
+            mSensors =
+                mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+            mSensorManager.registerListener(
+                this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
+            )
+        }
 
         binding.startEndButton.setOnClickListener {
             // App could take a perceptible amount of time to transition between states; put button into
@@ -161,6 +184,21 @@ class ExerciseFragment : Fragment() {
                 "Failed to achieve ExerciseService instance"
             }.endExercise()
         }
+    }
+
+
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+
+    }
+
+    override fun onSensorChanged(p0: SensorEvent?) {
+//        Sensor change value
+        val millibarsOfPressure = p0!!.values[0]
+        if (p0.sensor.type == Sensor.TYPE_HEART_RATE) {
+            binding.heartRateText.text = millibarsOfPressure.toString()
+            sendHeartRateToPhone(millibarsOfPressure.toInt())
+        }
+
     }
 
     private fun tryStartExercise() {
@@ -232,7 +270,7 @@ class ExerciseFragment : Fragment() {
             resetDisplayedFields()
         }
 
-        if (state == ExerciseState.ACTIVE && !ambientController.isAmbient) {
+        if ((state == ExerciseState.ACTIVE || android9) && !ambientController.isAmbient) {
             startChronometer()
         } else {
             stopChronometer()
@@ -264,7 +302,7 @@ class ExerciseFragment : Fragment() {
         }
     }
 
-    fun sendHeartRateToPhone(heartRate: Int) {
+    private fun sendHeartRateToPhone(heartRate: Int) {
         val dataClient: DataClient = Wearable.getDataClient(activity)
 
         val putDataMapRequest = PutDataMapRequest.create("/qz")

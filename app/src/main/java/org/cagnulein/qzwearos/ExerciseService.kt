@@ -23,10 +23,15 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Binder
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.health.services.client.data.*
 import androidx.lifecycle.Lifecycle
@@ -44,6 +49,7 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
+
 
 /**
  * Service that listens to the exercise state of the app. Local clients can bind to this service to
@@ -136,6 +142,7 @@ class ExerciseService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         Log.d(TAG, "onStartCommand")
+
 
         if (!isStarted) {
             isStarted = true

@@ -15,8 +15,8 @@
   ~ limitations under the License.
   -->
 
-<manifest
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -69,4 +69,5 @@
             android:foregroundServiceType="location"
             android:exported="false" />
     </application>
+    <uses-sdk tools:overrideLibrary="androidx.health.services.client"></uses-sdk>
 </manifest>

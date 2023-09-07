@@ -41,11 +41,7 @@ class StartupFragment : Fragment(R.layout.fragment_startup) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                val destination = if (healthServicesManager.hasExerciseCapability()) {
-                    R.id.prepareFragment
-                } else {
-                    R.id.notAvailableFragment
-                }
+                val destination = R.id.prepareFragment
                 findNavController().navigate(destination)
             }
         }
