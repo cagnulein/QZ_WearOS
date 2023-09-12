@@ -5038,3 +5038,10 @@ app/build/intermediates/intermediary_bundle/release/packageReleaseBundle/interme
 app/build/intermediates/linked_res_for_bundle/debug/bundled-res.ap_
 app/build/intermediates/module_bundle/debug/base.zip
 app/build/intermediates/module_bundle/release/base.zip
+app/build/intermediates/module_bundle/release/base.zip
+app/build/intermediates/module_bundle/debug/base.zip
+app/build/intermediates/linked_res_for_bundle/debug/bundled-res.ap_
+app/build/intermediates/intermediary_bundle/release/packageReleaseBundle/intermediary-bundle.aab
+app/build/intermediates/intermediary_bundle/release/intermediary-bundle.aab
+app/build/intermediates/intermediary_bundle/debug/intermediary-bundle.aab
+app/build/intermediates/bundle_manifest/debug/AndroidManifest.xml
