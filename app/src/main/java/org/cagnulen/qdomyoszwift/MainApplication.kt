@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp

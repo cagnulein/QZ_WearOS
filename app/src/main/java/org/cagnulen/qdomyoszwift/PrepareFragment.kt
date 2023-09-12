@@ -1,4 +1,4 @@
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.Manifest
 import android.os.Bundle
@@ -13,7 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import org.cagnulein.qzwearos.databinding.FragmentPrepareBinding
+import org.cagnulen.qdomyoszwift.databinding.FragmentPrepareBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -42,6 +42,7 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
         } else {
             Log.w(TAG, "Not all required permissions granted")
         }
+        findNavController().navigate(R.id.exerciseFragment)
     }
 
     override fun onCreateView(

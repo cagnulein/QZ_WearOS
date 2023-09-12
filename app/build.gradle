@@ -25,7 +25,7 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "org.cagnulein.qzwearos"
+        applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
         targetSdk 28
         versionCode 1
@@ -51,7 +51,7 @@ android {
         freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         freeCompilerArgs += "-Xjvm-default=all"
     }
-    namespace 'org.cagnulein.qzwearos'
+    namespace 'org.cagnulen.qdomyoszwift'
 }
 
 dependencies {

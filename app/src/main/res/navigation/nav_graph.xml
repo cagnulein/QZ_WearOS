@@ -23,27 +23,27 @@
 
     <fragment
         android:id="@+id/startupFragment"
-        android:name="org.cagnulein.qzwearos.StartupFragment"
+        android:name="org.cagnulen.qdomyoszwift.StartupFragment"
         android:label="StartupFragment"
         tools:layout="@layout/fragment_startup" >
     </fragment>
 
     <fragment
         android:id="@+id/prepareFragment"
-        android:name="org.cagnulein.qzwearos.PrepareFragment"
+        android:name="org.cagnulen.qdomyoszwift.PrepareFragment"
         android:label="PrepareFragment"
         tools:layout="@layout/fragment_prepare" >
     </fragment>
 
     <fragment
         android:id="@+id/notAvailableFragment"
-        android:name="org.cagnulein.qzwearos.NotAvailableFragment"
+        android:name="org.cagnulen.qdomyoszwift.NotAvailableFragment"
         android:label="NotAvailableFragment"
         tools:layout="@layout/fragment_not_available" />
 
     <fragment
         android:id="@+id/exerciseFragment"
-        android:name="org.cagnulein.qzwearos.ExerciseFragment"
+        android:name="org.cagnulen.qdomyoszwift.ExerciseFragment"
         android:label="ExerciseFragment"
         tools:layout="@layout/fragment_exercise">
         <action
@@ -53,7 +53,7 @@
 
     <dialog
         android:id="@+id/newExerciseConfirmationFragment"
-        android:name="org.cagnulein.qzwearos.NewExerciseConfirmationFragment"
+        android:name="org.cagnulen.qdomyoszwift.NewExerciseConfirmationFragment"
         android:label="NewExerciseConfirmationFragment"
         tools:layout="@layout/fragment_new_exercise_confirmation" />
 </navigation>

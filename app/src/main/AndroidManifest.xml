@@ -38,7 +38,7 @@
     </queries>
 
     <application
-        android:name="org.cagnulein.qzwearos.MainApplication"
+        android:name="org.cagnulen.qdomyoszwift.MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -54,7 +54,7 @@
             android:value="true" />
 
         <activity
-            android:name="org.cagnulein.qzwearos.MainActivity"
+            android:name="org.cagnulen.qdomyoszwift.MainActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>

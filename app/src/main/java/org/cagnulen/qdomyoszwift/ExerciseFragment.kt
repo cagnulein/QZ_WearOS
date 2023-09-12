@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.content.res.Resources
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -25,11 +26,10 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.health.services.client.data.DataPointContainer
@@ -41,33 +41,23 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.wear.ambient.AmbientModeSupport
+import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
-import org.cagnulein.qzwearos.AmbientEvent
-import org.cagnulein.qzwearos.ExerciseService
-import org.cagnulein.qzwearos.ExerciseServiceConnection
-import org.cagnulein.qzwearos.HealthServicesManager
-import org.cagnulein.qzwearos.MainViewModel
-import org.cagnulein.qzwearos.R
-import org.cagnulein.qzwearos.databinding.FragmentExerciseBinding
-import org.cagnulein.qzwearos.displayDuration
-import org.cagnulein.qzwearos.formatCalories
-import org.cagnulein.qzwearos.formatDistanceKm
-import org.cagnulein.qzwearos.formatElapsedTime
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import java.time.Duration
-import java.time.Instant
-import javax.inject.Inject
-import kotlin.math.roundToInt
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.cagnulen.qdomyoszwift.databinding.FragmentExerciseBinding
+import java.time.Duration
+import java.time.Instant
+import javax.inject.Inject
+import kotlin.math.roundToInt
+
 
 /**
  * Fragment showing the exercise controls and current exercise metrics.
@@ -119,13 +109,27 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             mSensorManager.registerListener(
                 this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
             )
+            binding.startEndButton.setText(R.string.end)
         }
 
         binding.startEndButton.setOnClickListener {
             // App could take a perceptible amount of time to transition between states; put button into
             // an intermediary "disabled" state to provide UI feedback.
-            it.isEnabled = false
-            startEndExercise()
+            if(Build.VERSION.SDK_INT < 30) {
+                if(binding.startEndButton.getText().toString().equals(resources.getString(R.string.start))) {
+                    binding.startEndButton.setText(R.string.end)
+                    mSensorManager.registerListener(
+                        this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
+                    )
+                }
+                else {
+                    binding.startEndButton.setText(R.string.start)
+                    mSensorManager.unregisterListener(this)
+                }
+            } else {
+                it.isEnabled = false
+                startEndExercise()
+            }
         }
         binding.pauseResumeButton.setOnClickListener {
             // App could take a perceptible amount of time to transition between states; put button into
@@ -281,10 +285,12 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun updateButtons(state: ExerciseState) {
-        binding.startEndButton.setText(if (state.isEnded) R.string.start else R.string.end)
-        binding.startEndButton.isEnabled = true
-        binding.pauseResumeButton.setText(if (state.isPaused) R.string.resume else R.string.pause)
-        binding.pauseResumeButton.isEnabled = !state.isEnded
+        if(Build.VERSION.SDK_INT >= 30) {
+            binding.startEndButton.setText(if (state.isEnded) R.string.start else R.string.end)
+            binding.startEndButton.isEnabled = true
+            binding.pauseResumeButton.setText(if (state.isPaused) R.string.resume else R.string.pause)
+            binding.pauseResumeButton.isEnabled = !state.isEnded
+        }
     }
 
     private fun updateMetrics(latestMetrics: DataPointContainer) {
@@ -309,6 +315,13 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         putDataMapRequest.dataMap.putInt("heart_rate", heartRate)
 
         val task: Task<DataItem> = dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
+
+        task.addOnSuccessListener { dataItem ->
+            Log.d(
+                "sendHeartRateToPhone",
+                "Sending text was successful: $dataItem"
+            )
+        }
 
         try {
             Tasks.await(task)

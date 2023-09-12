@@ -256,8 +256,8 @@ app/build/intermediates/compatible_screen_manifest/debug/output-metadata.json
 app/build/intermediates/compile_and_runtime_not_namespaced_r_class_jar/debug/R.jar
 app/build/intermediates/compile_and_runtime_not_namespaced_r_class_jar/debugAndroidTest/R.jar
 app/build/intermediates/compile_app_classes_jar/debug/classes.jar
-app/build/intermediates/data_binding_base_class_log_artifact/debug/out/org.cagnulein.qzwearos-binding_classes.json
-app/build/intermediates/data_binding_base_class_log_artifact/debugAndroidTest/out/org.cagnulein.qzwearos.test-binding_classes.json
+app/build/intermediates/data_binding_base_class_log_artifact/debug/out/org.cagnulen.qdomyoszwift-binding_classes.json
+app/build/intermediates/data_binding_base_class_log_artifact/debugAndroidTest/out/org.cagnulen.qdomyoszwift.test-binding_classes.json
 app/build/intermediates/data_binding_layout_info_type_merge/debug/out/activity_main-layout.xml
 app/build/intermediates/data_binding_layout_info_type_merge/debug/out/fragment_exercise-layout.xml
 app/build/intermediates/data_binding_layout_info_type_merge/debug/out/fragment_not_available-layout.xml
@@ -1361,3 +1361,5 @@ app/build/generated/data_binding_base_class_source_out/debug/out/org/cagnulein/q
 app/build/generated/data_binding_base_class_source_out/debug/out/org/cagnulein/qzwearos/databinding/FragmentStartupBinding.java
 app/build/generated/hilt/component_sources/debug/org/cagnulein/qzwearos/DaggerMainApplication_HiltComponents_SingletonC.java
 .idea/vcs.xml
+app/release/output-metadata.json
+app/release/app-release.apk

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.os.Bundle
 import android.view.KeyEvent

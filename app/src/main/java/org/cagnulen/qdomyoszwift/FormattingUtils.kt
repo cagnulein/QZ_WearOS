@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.text.style.RelativeSizeSpan
 import androidx.core.text.buildSpannedString

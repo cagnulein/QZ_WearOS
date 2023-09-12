@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cagnulein.qzwearos
+package org.cagnulen.qdomyoszwift
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -345,7 +345,7 @@ class ExerciseService : LifecycleService() {
 
     companion object {
         private const val NOTIFICATION_ID = 1
-        private const val NOTIFICATION_CHANNEL = "org.cagnulein.qzwearos.ONGOING_EXERCISE"
+        private const val NOTIFICATION_CHANNEL = "org.cagnulen.qdomyoszwift.ONGOING_EXERCISE"
         private const val NOTIFICATION_CHANNEL_DISPLAY = "Ongoing Exercise"
         private const val NOTIFICATION_TITLE = "Exercise Sample"
         private const val NOTIFICATION_TEXT = "Ongoing Exercise"
