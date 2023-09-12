@@ -1363,3 +1363,6 @@ app/build/generated/hilt/component_sources/debug/org/cagnulein/qzwearos/DaggerMa
 .idea/vcs.xml
 app/release/output-metadata.json
 app/release/app-release.apk
+app/debug/app-debug.aab
+app/release/app-release.aab
+.idea/deploymentTargetDropDown.xml
