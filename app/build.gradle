@@ -27,8 +27,8 @@ android {
     defaultConfig {
         applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
-        targetSdk 28
-        versionCode 1
+        targetSdk 30
+        versionCode 3
         versionName "1.0"
     }
     buildTypes {
