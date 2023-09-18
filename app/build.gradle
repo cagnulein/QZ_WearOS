@@ -87,4 +87,7 @@ dependencies {
 
     // Ongoing Activity.
     implementation "androidx.wear:wear-ongoing:1.0.0"
+
+    // startup
+    implementation "androidx.core:core-splashscreen:1.1.0-alpha02"
 }
