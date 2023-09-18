@@ -26,7 +26,6 @@ import androidx.navigation.fragment.findNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.core.splashscreen.SplashScreen;
 
 /**
  * Fragment shown at startup. It's only function is to advance to the next screen based on whether
