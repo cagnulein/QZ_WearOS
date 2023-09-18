@@ -55,6 +55,8 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        installSplashScreen()
+
         super.onViewCreated(view, savedInstanceState)
 
         // Bind to our service. Views will only update once we are connected to it.
