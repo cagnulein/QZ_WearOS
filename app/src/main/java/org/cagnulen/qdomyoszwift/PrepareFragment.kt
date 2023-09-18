@@ -17,6 +17,7 @@ import org.cagnulen.qdomyoszwift.databinding.FragmentPrepareBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import androidx.core.splashscreen.SplashScreen
 
 @AndroidEntryPoint
 class PrepareFragment : Fragment(R.layout.fragment_prepare) {
@@ -55,7 +56,6 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        installSplashScreen()
 
         super.onViewCreated(view, savedInstanceState)
 
@@ -74,6 +74,13 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
         permissionLauncher.launch(REQUIRED_PERMISSIONS)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition.
+        installSplashScreen()
+
+        super.onCreate(savedInstanceState)
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
         // Unbind from the service.
