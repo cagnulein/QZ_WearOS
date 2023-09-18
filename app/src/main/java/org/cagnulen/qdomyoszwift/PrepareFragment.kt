@@ -17,7 +17,6 @@ import org.cagnulen.qdomyoszwift.databinding.FragmentPrepareBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import androidx.core.splashscreen.SplashScreen
 
 @AndroidEntryPoint
 class PrepareFragment : Fragment(R.layout.fragment_prepare) {
@@ -76,7 +75,7 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Handle the splash screen transition.
-        installSplashScreen()
+        //installSplashScreen()
 
         super.onCreate(savedInstanceState)
     }
