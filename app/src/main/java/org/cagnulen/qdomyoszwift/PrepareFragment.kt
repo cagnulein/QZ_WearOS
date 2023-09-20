@@ -55,6 +55,7 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
         super.onViewCreated(view, savedInstanceState)
 
         // Bind to our service. Views will only update once we are connected to it.
@@ -72,6 +73,13 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
         permissionLauncher.launch(REQUIRED_PERMISSIONS)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition.
+        //installSplashScreen()
+
+        super.onCreate(savedInstanceState)
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
         // Unbind from the service.

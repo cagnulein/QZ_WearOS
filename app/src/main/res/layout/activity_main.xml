@@ -22,6 +22,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
+    android:padding="5dp"
     tools:deviceIds="wear">
 
     <androidx.fragment.app.FragmentContainerView

@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.wear.ambient.AmbientModeSupport
@@ -72,5 +73,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         override fun onUpdateAmbient() {
             viewModel.sendAmbientEvent(AmbientEvent.Update)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
     }
 }
