@@ -4,8 +4,6 @@
     <style name="Theme.App.Starting" parent="Theme.SplashScreen.IconBackground">
         <!-- Set the splash screen background to black -->
         <item name="windowSplashScreenBackground">@android:color/black</item>
-    <!-- Set a white background behind the splash screen icon. -->
-        <item name="windowSplashScreenIconBackgroundColor">@android:color/white</item>        
         <!-- Use windowSplashScreenAnimatedIcon to add a drawable or an animated
              drawable. -->
         <item name="windowSplashScreenAnimatedIcon">@drawable/launcher</item>
