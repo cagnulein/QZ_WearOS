@@ -28,7 +28,7 @@ android {
         applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
         targetSdk 30
-        versionCode 10000
+        versionCode 10001
         versionName "1.0"
     }
     buildTypes {
@@ -89,5 +89,5 @@ dependencies {
     implementation "androidx.wear:wear-ongoing:1.0.0"
 
     // startup
-    implementation "androidx.core:core-splashscreen:1.1.0-alpha02"
+    implementation "androidx.core:core-splashscreen:1.2.0-alpha01"
 }
