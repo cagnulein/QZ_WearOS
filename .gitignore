@@ -5045,3 +5045,7 @@ app/build/intermediates/intermediary_bundle/release/packageReleaseBundle/interme
 app/build/intermediates/intermediary_bundle/release/intermediary-bundle.aab
 app/build/intermediates/intermediary_bundle/debug/intermediary-bundle.aab
 app/build/intermediates/bundle_manifest/debug/AndroidManifest.xml
+/app/build/intermediates
+/.idea
+/app/build/generated
+/app/build/snapshot
