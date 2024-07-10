@@ -16,6 +16,7 @@
 
 package org.cagnulen.qdomyoszwift
 
+import android.app.Activity
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Resources
@@ -309,7 +310,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun sendHeartRateToPhone(heartRate: Int) {
-        val dataClient: DataClient = Wearable.getDataClient(activity)
+        val dataClient: DataClient = Wearable.getDataClient(activity as Activity)
 
         val putDataMapRequest = PutDataMapRequest.create("/qz")
         putDataMapRequest.dataMap.putInt("heart_rate", heartRate)
