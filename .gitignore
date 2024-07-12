@@ -5050,3 +5050,4 @@ app/build/intermediates/bundle_manifest/debug/AndroidManifest.xml
 /app/build/generated
 /app/build/snapshot
 /.gradle
+/app/build
