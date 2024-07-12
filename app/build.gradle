@@ -27,8 +27,8 @@ android {
     defaultConfig {
         applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
-        targetSdk 33
-        versionCode 10007
+        targetSdk 34
+        versionCode 10008
         versionName "1.0.1"
     }
     buildTypes {
@@ -52,6 +52,17 @@ android {
         freeCompilerArgs += "-Xjvm-default=all"
     }
     namespace 'org.cagnulen.qdomyoszwift'
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/ASL2.0'
+    }
 }
 
 dependencies {
@@ -92,4 +103,6 @@ dependencies {
 
     // startup
     implementation "androidx.core:core-splashscreen:1.1.0-rc01"
+
+    implementation 'com.google.android.wearable:wearable:2.9.0'
 }
