@@ -23,3 +23,5 @@
 -keep class androidx.appcompat.** { *; }
 -keep class androidx.wear.ongoing.** { *; }
 -keep class androidx.versionedparcelable.** { *; }
+-keep class com.google.android.wearable.** { *; }
+-keep class androidx.wear.** { *; }

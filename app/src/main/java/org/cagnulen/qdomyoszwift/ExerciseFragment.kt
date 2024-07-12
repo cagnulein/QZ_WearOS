@@ -182,7 +182,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun startEndExercise() {
-        if (cachedExerciseState.isEnded) {
+        if (cachedExerciseState.isEnded || cachedExerciseState.isEnding) {
             tryStartExercise()
         } else {
             checkNotNull(serviceConnection.exerciseService) {
@@ -287,7 +287,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
 
     private fun updateButtons(state: ExerciseState) {
         if(Build.VERSION.SDK_INT >= 30) {
-            binding.startEndButton.setText(if (state.isEnded) R.string.start else R.string.end)
+            binding.startEndButton.setText(if (state.isEnded || state.isEnding) R.string.start else R.string.end)
             binding.startEndButton.isEnabled = true
             binding.pauseResumeButton.setText(if (state.isPaused) R.string.resume else R.string.pause)
             binding.pauseResumeButton.isEnabled = !state.isEnded
