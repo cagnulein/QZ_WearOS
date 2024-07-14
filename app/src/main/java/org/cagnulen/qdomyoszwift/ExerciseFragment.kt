@@ -27,8 +27,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -412,15 +410,6 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     inner class AmbientModeHandler {
-
-        private val handler = Handler(Looper.getMainLooper())
-        private val heartRateRunnable = object : Runnable {
-            override fun run() {
-                readHeartRate()
-                handler.postDelayed(this, 1000) // Ripeti ogni secondo
-            }
-        }
-
         internal fun onAmbientEvent(event: AmbientEvent) {
             when (event) {
                 is AmbientEvent.Enter -> onEnterAmbient()
@@ -430,42 +419,20 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         }
 
         private fun onEnterAmbient() {
+            // Note: Apps should also handle low-bit ambient and burn-in protection.
             unbindViewsFromService()
             setAmbientUiState(true)
             performOneTimeUiUpdate()
-            startHeartRateUpdates()
         }
 
         private fun onExitAmbient() {
             performOneTimeUiUpdate()
             setAmbientUiState(false)
             bindViewsToService()
-            stopHeartRateUpdates()
         }
 
         private fun onUpdateAmbient() {
             performOneTimeUiUpdate()
-        }
-
-        private fun startHeartRateUpdates() {
-            handler.post(heartRateRunnable)
-        }
-
-        private fun stopHeartRateUpdates() {
-            handler.removeCallbacks(heartRateRunnable)
-        }
-
-        private fun readHeartRate() {
-            val service = checkNotNull(serviceConnection.exerciseService) {
-                "Failed to achieve ExerciseService instance"
-            }
-            updateExerciseStatus(service.exerciseState.value)
-            updateLaps(service.exerciseLaps.value)
-
-            service.latestMetrics.value?.let { updateMetrics(it) }
-
-            activeDurationCheckpoint = service.activeDurationCheckpoint.value
-            updateChronometer()
         }
     }
 
