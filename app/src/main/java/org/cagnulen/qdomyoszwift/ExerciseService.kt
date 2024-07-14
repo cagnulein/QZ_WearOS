@@ -98,6 +98,7 @@ class ExerciseService : LifecycleService() {
     fun prepareExercise() {
         lifecycleScope.launch {
             healthServicesManager.prepareExercise()
+            healthServicesManager.startExercise()
         }
     }
 

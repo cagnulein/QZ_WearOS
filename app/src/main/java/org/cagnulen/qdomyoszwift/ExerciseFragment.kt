@@ -112,33 +112,6 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             mSensorManager.registerListener(
                 this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
             )
-            binding.startEndButton.setText(R.string.end)
-        }
-
-        binding.startEndButton.setOnClickListener {
-            // App could take a perceptible amount of time to transition between states; put button into
-            // an intermediary "disabled" state to provide UI feedback.
-            if(Build.VERSION.SDK_INT < 30) {
-                if(binding.startEndButton.getText().toString().equals(resources.getString(R.string.start))) {
-                    binding.startEndButton.setText(R.string.end)
-                    mSensorManager.registerListener(
-                        this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
-                    )
-                }
-                else {
-                    binding.startEndButton.setText(R.string.start)
-                    mSensorManager.unregisterListener(this)
-                }
-            } else {
-                it.isEnabled = false
-                startEndExercise()
-            }
-        }
-        binding.pauseResumeButton.setOnClickListener {
-            // App could take a perceptible amount of time to transition between states; put button into
-            // an intermediary "disabled" state to provide UI feedback.
-            it.isEnabled = false
-            pauseResumeExercise()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -290,15 +263,6 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun updateButtons(state: ExerciseState) {
-        if(Build.VERSION.SDK_INT >= 30) {
-            binding.startEndButton.setText(if (state.isEnded) R.string.start else R.string.end)
-            if(state.isEnding)
-                binding.startEndButton.isEnabled = false
-            else
-                binding.startEndButton.isEnabled = true
-            binding.pauseResumeButton.setText(if (state.isPaused) R.string.resume else R.string.pause)
-            binding.pauseResumeButton.isEnabled = false
-        }
     }
 
     private fun updateMetrics(latestMetrics: DataPointContainer) {
@@ -397,10 +361,6 @@ class ExerciseFragment : Fragment(), SensorEventListener {
 
         // Hide the buttons in ambient mode.
         val buttonVisibility = if (isAmbient) View.INVISIBLE else View.VISIBLE
-        buttonVisibility.let {
-            binding.startEndButton.visibility = it
-            binding.pauseResumeButton.visibility = it
-        }
     }
 
     private fun performOneTimeUiUpdate() {

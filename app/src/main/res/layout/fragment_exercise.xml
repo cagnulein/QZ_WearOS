@@ -17,14 +17,12 @@
 <androidx.wear.widget.BoxInsetLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:padding="5dp">
 
 <androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="1dp"
@@ -152,13 +150,12 @@
         android:minHeight="32dp"
         android:text="@string/empty_metric"
         android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-        app:layout_constraintBottom_toTopOf="@id/start_end_button"
+        android:visibility="gone"
         app:layout_constraintLeft_toRightOf="@id/heart_rate_icon"
         app:layout_constraintRight_toLeftOf="@id/guide_v50pct"
         app:layout_constraintTop_toBottomOf="@id/heart_rate_text"
         tools:enabled="true"
-        tools:text="1.1"
-        android:visibility="gone" />
+        tools:text="1.1" />
 
     <ImageView
         android:id="@+id/laps_icon"
@@ -191,28 +188,5 @@
         tools:text="2"
         android:visibility="gone" />
 
-    <Button
-        android:id="@+id/start_end_button"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/space_2dp"
-        android:padding="@dimen/space_4dp"
-        android:text="@string/start"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/guide_v50pct" />
-
-    <Button
-        android:id="@+id/pause_resume_button"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/space_2dp"
-        android:enabled="false"
-        android:padding="@dimen/space_4dp"
-        android:text="@string/pause"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/guide_v50pct"
-        app:layout_constraintRight_toRightOf="parent"
-        tools:enabled="true" />
 </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.wear.widget.BoxInsetLayout>
