@@ -286,8 +286,8 @@ class ExerciseService : LifecycleService() {
             isForeground = true
             Log.d(TAG, "Posting ongoing activity notification")
 
-            createNotificationChannel()
-            startForeground(NOTIFICATION_ID, buildNotification())
+            /*createNotificationChannel()
+            startForeground(NOTIFICATION_ID, buildNotification())*/
         }
     }
 
