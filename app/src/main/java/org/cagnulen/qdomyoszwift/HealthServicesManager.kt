@@ -155,17 +155,29 @@ class HealthServicesManager @Inject constructor(
 
     suspend fun endExercise() {
         Log.d(TAG, "Ending exercise")
-        exerciseClient.endExercise()
+        try {
+            exerciseClient.endExercise()
+        } catch (e: Exception) {
+            Log.e(TAG, "Ending exercise failed - ${e.message}")
+        }
     }
 
     suspend fun pauseExercise() {
         Log.d(TAG, "Pausing exercise")
-        exerciseClient.pauseExercise()
+        try {
+            exerciseClient.pauseExercise()
+        } catch (e: Exception) {
+            Log.e(TAG, "Pausing exercise failed - ${e.message}")
+        }
     }
 
     suspend fun resumeExercise() {
         Log.d(TAG, "Resuming exercise")
-        exerciseClient.resumeExercise()
+        try {
+            exerciseClient.resumeExercise()
+        } catch (e: Exception) {
+            Log.e(TAG, "Resuming exercise failed - ${e.message}")
+        }
     }
 
     suspend fun markLap() {

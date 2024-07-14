@@ -28,7 +28,7 @@ android {
         applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
         targetSdk 34
-        versionCode 10014
+        versionCode 10015
         versionName "1.1.0"
     }
     buildTypes {
