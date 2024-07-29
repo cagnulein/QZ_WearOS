@@ -22,6 +22,7 @@
 
     <!-- For receiving exercise metrics. -->
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- For ambient mode. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />

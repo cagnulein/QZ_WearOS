@@ -112,6 +112,7 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
     private companion object {
         val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.BODY_SENSORS,
+            Manifest.permission.BODY_SENSORS_BACKGROUND,
             Manifest.permission.ACTIVITY_RECOGNITION
         )
     }
