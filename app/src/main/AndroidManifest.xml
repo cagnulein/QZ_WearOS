@@ -63,6 +63,10 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".HeartRateService"
+            android:exported="false" />
+
         <!-- Add foreground service location permission for exercise tracking -->
         <service
             android:name=".ExerciseService"

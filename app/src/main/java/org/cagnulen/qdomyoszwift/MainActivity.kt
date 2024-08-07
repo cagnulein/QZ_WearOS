@@ -16,10 +16,14 @@
 
 package org.cagnulen.qdomyoszwift
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.os.PowerManager
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
@@ -78,5 +82,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        startHeartRateService()
+        val wakeLock: PowerManager.WakeLock =
+            (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+                newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag").apply {
+                    acquire()
+                }
+            }
+    }
+
+    private fun startHeartRateService() {
+        val serviceIntent = Intent(this, HeartRateService::class.java)
+        ContextCompat.startForegroundService(this, serviceIntent)
     }
 }

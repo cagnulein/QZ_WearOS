@@ -266,12 +266,13 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun updateMetrics(latestMetrics: DataPointContainer) {
-        latestMetrics.getData(DataType.HEART_RATE_BPM).let {
+        /*latestMetrics.getData(DataType.HEART_RATE_BPM).let {
             if (it.isNotEmpty()) {
                 binding.heartRateText.text = it.last().value.roundToInt().toString()
                 sendHeartRateToPhone(it.last().value.roundToInt())
             }
-        }
+        }*/
+        binding.heartRateText.text = HeartRateService.heartrate.toInt().toString()
         latestMetrics.getData(DataType.DISTANCE_TOTAL)?.let {
             binding.distanceText.text = formatDistanceKm(it.total)
         }
