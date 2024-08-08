@@ -18,12 +18,14 @@ package org.cagnulen.qdomyoszwift
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -94,24 +96,26 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
     }
 
     private fun hasRequiredPermissions(): Boolean {
-        return REQUIRED_PERMISSIONS.all {
+        return PrepareFragment.REQUIRED_PERMISSIONS.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
     }
 
+    private val REQUEST_CODE_PERMISSIONS = 123
+
     private fun requestRequiredPermissions() {
-        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+        ActivityCompat.requestPermissions(this, PrepareFragment.REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
     }    
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             if (allPermissionsGranted) {
                 onAllPermissionsGranted()
             } else {
-                // Gestisci il caso in cui l'utente non concede tutte le autorizzazioni
+                requestRequiredPermissions()
             }
         }
     }
