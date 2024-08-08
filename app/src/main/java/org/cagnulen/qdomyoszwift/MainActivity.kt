@@ -93,27 +93,30 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
             }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    private fun hasRequiredPermissions(): Boolean {
+        return REQUIRED_PERMISSIONS.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
 
-        if (requestCode == PrepareFragment.REQUEST_CODE_PERMISSIONS) {
-            boolean allGranted = true;
-            for (int grantResult : grantResults) {
-                if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
+    private fun requestRequiredPermissions() {
+        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+    }    
 
-            if (allGranted) {
-                onAllPermissionsGranted();
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (allPermissionsGranted) {
+                onAllPermissionsGranted()
             } else {
+                // Gestisci il caso in cui l'utente non concede tutte le autorizzazioni
             }
         }
     }
 
-    private void onAllPermissionsGranted() {
+    private fun onAllPermissionsGranted() {
         val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
         val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
 
