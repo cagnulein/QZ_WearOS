@@ -109,7 +109,8 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
         }
     }
 
-    private companion object {
+    public companion object {
+        @JvmStatic
         val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.BODY_SENSORS_BACKGROUND,
             Manifest.permission.BLUETOOTH_CONNECT,

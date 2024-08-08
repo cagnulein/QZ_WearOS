@@ -93,16 +93,44 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
             }
     }
 
-    private fun startHeartRateService() {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == PrepareFragment.REQUEST_CODE_PERMISSIONS) {
+            boolean allGranted = true;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                onAllPermissionsGranted();
+            } else {
+            }
+        }
+    }
+
+    private void onAllPermissionsGranted() {
         val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
         val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
 
         val serviceIntent = Intent(this, HeartRateService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-            startForegroundService(serviceIntent)
+            serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+            startForegroundService(serviceIntent);
         } else {
-            startService(serviceIntent)
+            startService(serviceIntent);
+        }
+    }
+
+    private fun startHeartRateService() {
+        if (!hasRequiredPermissions()) {
+            requestRequiredPermissions();
+        } else {
+            onAllPermissionsGranted();
         }
     }
 }
