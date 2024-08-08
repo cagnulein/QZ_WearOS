@@ -18,11 +18,13 @@ package org.cagnulen.qdomyoszwift
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.view.KeyEvent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.findNavController
@@ -92,7 +94,15 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
     }
 
     private fun startHeartRateService() {
+        val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
+        val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
+
         val serviceIntent = Intent(this, HeartRateService::class.java)
-        ContextCompat.startForegroundService(this, serviceIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
     }
 }

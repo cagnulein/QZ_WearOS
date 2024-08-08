@@ -65,7 +65,8 @@
 
         <service
             android:name=".HeartRateService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- Add foreground service location permission for exercise tracking -->
         <service
