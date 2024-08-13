@@ -114,7 +114,7 @@ class PrepareFragment : Fragment(R.layout.fragment_prepare) {
         val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.BODY_SENSORS,
             Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACTIVITY_RECOGNITION,
+            Manifest.permission.ACTIVITY_RECOGNITION
         )
     }
 }

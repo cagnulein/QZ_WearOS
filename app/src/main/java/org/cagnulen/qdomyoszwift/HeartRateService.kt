@@ -1,5 +1,6 @@
 package org.cagnulen.qdomyoszwift
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,9 +15,11 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataClient
@@ -33,15 +36,95 @@ class HeartRateService : Service(), SensorEventListener {
 
         @JvmStatic
         var heartrate: Int = 0
+
+        @JvmStatic
+        fun sendHeartRateToPhone(context: Context) {
+            val dataClient: DataClient = Wearable.getDataClient(context)
+
+            val putDataMapRequest = PutDataMapRequest.create("/qz")
+            putDataMapRequest.dataMap.putInt("heart_rate", heartrate)
+
+            val task: Task<DataItem> = dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
+
+            task.addOnSuccessListener { dataItem ->
+                Log.d(
+                    "sendHeartRateToPhone",
+                    "Sending heart rate was successful: $dataItem"
+                )
+            }
+
+            try {
+                Tasks.await(task)
+            } catch (exception: Exception) {
+                // Handle any exceptions that might occur while awaiting the task
+            }
+        }
     }
 
     private lateinit var sensorManager: SensorManager
     private lateinit var heartRateSensor: Sensor
 
+    private lateinit var alarmManager: AlarmManager
+    private lateinit var alarmIntent: PendingIntent
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        setupAlarm()
+    }
+
+    private fun setupAlarm() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = ContextCompat.getSystemService(applicationContext, AlarmManager::class.java)
+            if (alarmManager?.canScheduleExactAlarms() == false) {
+                Intent().also { intent ->
+                    intent.action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                    applicationContext.startActivity(intent)
+                }
+            }
+        }
+
+        alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, HeartRateAlarmReceiver::class.java)
+        alarmIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12 (API 31) and above
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    System.currentTimeMillis() + 1000,
+                    alarmIntent
+                )
+            } else {
+                println("alarm permission not granted")
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Android 6.0 (API 23) to Android 11 (API 30)
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + 1000,
+                alarmIntent
+            )
+        } else {
+            // Below Android 6.0 (API 23)
+            alarmManager.setExact(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + 1000,
+                alarmIntent
+            )
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        alarmManager.cancel(alarmIntent)
+        sensorManager.unregisterListener(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -55,28 +138,6 @@ class HeartRateService : Service(), SensorEventListener {
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)!!;
         sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
         return START_STICKY
-    }
-
-    private fun sendHeartRateToPhone(heartRate: Int) {
-        val dataClient: DataClient = Wearable.getDataClient(applicationContext)
-
-        val putDataMapRequest = PutDataMapRequest.create("/qz")
-        putDataMapRequest.dataMap.putInt("heart_rate", heartRate)
-
-        val task: Task<DataItem> = dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
-
-        task.addOnSuccessListener { dataItem ->
-            Log.d(
-                "sendHeartRateToPhone",
-                "Sending text was successful: $dataItem"
-            )
-        }
-
-        try {
-            Tasks.await(task)
-        } catch (exception: Exception) {
-            // Handle any exceptions that might occur while awaiting the task
-        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -112,11 +173,9 @@ class HeartRateService : Service(), SensorEventListener {
             .build()
     }
 
-    override fun onSensorChanged(p0: SensorEvent?) {
-        if (p0!!.sensor.getType() === Sensor.TYPE_HEART_RATE) {
-            val heartRate: Float = p0!!.values.get(0)
-            sendHeartRateToPhone(heartRate.toInt())
-            heartrate = heartRate.toInt()
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
+            heartrate = event.values[0].toInt()
             println(heartrate)
         }
     }
