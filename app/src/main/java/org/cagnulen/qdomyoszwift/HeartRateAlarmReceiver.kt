@@ -11,7 +11,14 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat.startActivity
 
 class HeartRateAlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    companion object {
+
+        @JvmStatic
+        lateinit var alarmIntent: PendingIntent
+    }
+
+        override fun onReceive(context: Context, intent: Intent) {
+
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HeartRate:WakeLock")
         wakeLock.acquire(10000) // 10 seconds
@@ -20,7 +27,7 @@ class HeartRateAlarmReceiver : BroadcastReceiver() {
 
         // Reschedule the alarm
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val alarmIntent = PendingIntent.getBroadcast(
+        alarmIntent = PendingIntent.getBroadcast(
             context,
             0,
             Intent(context, HeartRateAlarmReceiver::class.java),

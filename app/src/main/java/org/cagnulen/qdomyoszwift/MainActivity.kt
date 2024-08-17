@@ -16,6 +16,7 @@
 
 package org.cagnulen.qdomyoszwift
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -46,6 +47,12 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackProvider {
+
+    companion object {
+
+        @JvmStatic
+        lateinit var serviceIntent: Intent
+    }
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -124,7 +131,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
         val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
 
-        val serviceIntent = Intent(this, HeartRateService::class.java)
+        serviceIntent = Intent(this, HeartRateService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
             startForegroundService(serviceIntent);
