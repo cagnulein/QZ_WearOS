@@ -252,7 +252,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         viewLifecycleOwner.lifecycleScope.launch {
             if (healthServicesManager.isTrackingExerciseInAnotherApp()) {
                 // Show the user a confirmation screen.
-                findNavController().navigate(R.id.to_newExerciseConfirmation)
+                //findNavController().navigate(R.id.to_newExerciseConfirmation)
             } else if (!healthServicesManager.isExerciseInProgress()) {
                 checkNotNull(serviceConnection.exerciseService) {
                     "Failed to achieve ExerciseService instance"

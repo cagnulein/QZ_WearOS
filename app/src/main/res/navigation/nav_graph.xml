@@ -19,14 +19,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navigation"
-    app:startDestination="@id/startupFragment">
-
-    <fragment
-        android:id="@+id/startupFragment"
-        android:name="org.cagnulen.qdomyoszwift.StartupFragment"
-        android:label="StartupFragment"
-        tools:layout="@layout/fragment_startup" >
-    </fragment>
+    app:startDestination="@id/prepareFragment">
 
     <fragment
         android:id="@+id/prepareFragment"
@@ -45,15 +38,6 @@
         android:id="@+id/exerciseFragment"
         android:name="org.cagnulen.qdomyoszwift.ExerciseFragment"
         android:label="ExerciseFragment"
-        tools:layout="@layout/fragment_exercise">
-        <action
-            android:id="@+id/to_newExerciseConfirmation"
-            app:destination="@id/newExerciseConfirmationFragment" />
-    </fragment>
+        tools:layout="@layout/fragment_exercise"/>
 
-    <dialog
-        android:id="@+id/newExerciseConfirmationFragment"
-        android:name="org.cagnulen.qdomyoszwift.NewExerciseConfirmationFragment"
-        android:label="NewExerciseConfirmationFragment"
-        tools:layout="@layout/fragment_new_exercise_confirmation" />
 </navigation>
