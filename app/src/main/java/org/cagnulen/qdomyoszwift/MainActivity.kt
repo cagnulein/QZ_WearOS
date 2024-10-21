@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
 
         @JvmStatic
         lateinit var serviceIntent: Intent
+        private var isFirstRun = true
     }
 
     private val viewModel: MainViewModel by viewModels()
@@ -117,13 +118,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
+        Log.d(TAG, "Is first run: $isFirstRun")
+
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-            if (allPermissionsGranted) {
+            if (allPermissionsGranted || isFirstRun == false) {
                 onAllPermissionsGranted()
             } else {
                 requestRequiredPermissions()
             }
+
+            isFirstRun = false
         }
     }
 
