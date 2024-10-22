@@ -136,7 +136,8 @@ class HeartRateService : Service(), SensorEventListener {
         )
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager;
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)!!;
-        sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        val success = sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        Log.d("HeartRateService", "onStartCommand $success");
         return START_STICKY
     }
 
@@ -174,6 +175,7 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
+        Log.d("HeartRateService", "onSensorChanged $event");
         if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
             heartrate = event.values[0].toInt()
             println(heartrate)
