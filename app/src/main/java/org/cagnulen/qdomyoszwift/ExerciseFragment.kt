@@ -212,11 +212,14 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         // Bind to our service. Views will only update once we are connected to it.
         ExerciseService.bindService(requireContext().applicationContext, serviceConnection)
         bindViewsToService()
+
+        handler.post(metricsUpdateRunnable)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         // Unbind from the service.
+        handler.removeCallbacks(metricsUpdateRunnable)
         ExerciseService.unbindService(requireContext().applicationContext, serviceConnection)
         _binding = null
     }
@@ -330,7 +333,15 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     private fun updateButtons(state: ExerciseState) {
     }
 
-    private fun updateMetrics(latestMetrics: DataPointContainer) {
+    private val handler = Handler(Looper.getMainLooper())
+    private val metricsUpdateRunnable = object : Runnable {
+        override fun run() {
+            updateMetrics(null)
+            handler.postDelayed(this, 1000) // Run every second
+        }
+    }
+
+    private fun updateMetrics(latestMetrics: DataPointContainer?) {
         /*latestMetrics.getData(DataType.HEART_RATE_BPM).let {
             if (it.isNotEmpty()) {
                 binding.heartRateText.text = it.last().value.roundToInt().toString()
@@ -338,10 +349,10 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             }
         }*/
         binding.heartRateText.text = HeartRateService.heartrate.toInt().toString()
-        latestMetrics.getData(DataType.DISTANCE_TOTAL)?.let {
+        latestMetrics?.getData(DataType.DISTANCE_TOTAL)?.let {
             binding.distanceText.text = formatDistanceKm(it.total)
         }
-        latestMetrics.getData(DataType.CALORIES_TOTAL)?.let {
+        latestMetrics?.getData(DataType.CALORIES_TOTAL)?.let {
             binding.caloriesText.text = formatCalories(it.total)
         }
     }
