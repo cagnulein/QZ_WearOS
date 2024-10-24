@@ -175,10 +175,11 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        Log.d("HeartRateService", "onSensorChanged $event");
+        Log.d("HeartRateService", "onSensorChanged");
+        Log.d("HeartRateService", "Sensor type: ${event?.sensor?.type}")
         if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
             heartrate = event.values[0].toInt()
-            println(heartrate)
+            Log.d("HeartRateService", heartrate.toString());
         }
     }
 
