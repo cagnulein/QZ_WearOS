@@ -1,6 +1,5 @@
 package org.cagnulen.qdomyoszwift
 
-import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,12 +13,13 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
-import android.provider.Settings
+import android.os.Looper
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataClient
@@ -64,66 +64,44 @@ class HeartRateService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private lateinit var heartRateSensor: Sensor
 
-    private lateinit var alarmManager: AlarmManager
-    private lateinit var alarmIntent: PendingIntent
+    private lateinit var wakeLock: PowerManager.WakeLock
+    private val handler = Handler(Looper.getMainLooper())
+
+    // Runnable that sends heart rate every 1 second
+    private val sendHeartRateRunnable = object : Runnable {
+        override fun run() {
+            sendHeartRateToPhone(this@HeartRateService)
+            handler.postDelayed(this, 1000) // Schedule next update in 1 second
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        setupAlarm()
-    }
 
-    private fun setupAlarm() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val alarmManager = ContextCompat.getSystemService(applicationContext, AlarmManager::class.java)
-            if (alarmManager?.canScheduleExactAlarms() == false) {
-                Intent().also { intent ->
-                    intent.action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
-                    applicationContext.startActivity(intent)
-                }
-            }
-        }
-
-        alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(this, HeartRateAlarmReceiver::class.java)
-        alarmIntent = PendingIntent.getBroadcast(
-            this,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        // Acquire wake lock to keep CPU running even when screen is off
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "QZ:HeartRateMonitoring"
         )
+        wakeLock.acquire()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12 (API 31) and above
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    System.currentTimeMillis() + 1000,
-                    alarmIntent
-                )
-            } else {
-                println("alarm permission not granted")
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Android 6.0 (API 23) to Android 11 (API 30)
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis() + 1000,
-                alarmIntent
-            )
-        } else {
-            // Below Android 6.0 (API 23)
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                System.currentTimeMillis() + 1000,
-                alarmIntent
-            )
-        }
+        Log.d("HeartRateService", "Wake lock acquired")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        alarmManager.cancel(alarmIntent)
+
+        // Stop periodic heart rate updates
+        handler.removeCallbacks(sendHeartRateRunnable)
+
+        // Release wake lock
+        if (wakeLock.isHeld) {
+            wakeLock.release()
+            Log.d("HeartRateService", "Wake lock released")
+        }
+
         sensorManager.unregisterListener(this)
     }
 
@@ -134,10 +112,16 @@ class HeartRateService : Service(), SensorEventListener {
             createNotification(),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         )
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager;
-        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)!!;
-        val success = sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        Log.d("HeartRateService", "onStartCommand $success");
+
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)!!
+        val success = sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL)
+        Log.d("HeartRateService", "onStartCommand sensor registered: $success")
+
+        // Start periodic heart rate updates using Handler
+        handler.post(sendHeartRateRunnable)
+        Log.d("HeartRateService", "Started periodic heart rate updates")
+
         return START_STICKY
     }
 
@@ -169,17 +153,17 @@ class HeartRateService : Service(), SensorEventListener {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Heart Rate Monitoring")
             .setContentText("Monitoring your heart rate")
-            .setSmallIcon(R.drawable.ic_run) // Assicurati di avere questa icona nelle tue risorse
+            .setSmallIcon(R.drawable.ic_run)
             .setContentIntent(pendingIntent)
             .build()
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        Log.d("HeartRateService", "onSensorChanged");
+        Log.d("HeartRateService", "onSensorChanged")
         Log.d("HeartRateService", "Sensor type: ${event?.sensor?.type}")
         if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
             heartrate = event.values[0].toInt()
-            Log.d("HeartRateService", heartrate.toString());
+            Log.d("HeartRateService", "Heart rate: $heartrate")
         }
     }
 

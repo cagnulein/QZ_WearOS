@@ -17,8 +17,6 @@
 package org.cagnulen.qdomyoszwift
 
 import android.app.Activity
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
@@ -61,7 +59,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.cagnulen.qdomyoszwift.HeartRateAlarmReceiver.Companion.alarmIntent
 import org.cagnulen.qdomyoszwift.databinding.FragmentExerciseBinding
 import java.time.Duration
 import java.time.Instant
@@ -124,57 +121,20 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         }
 
         binding.exit.setOnClickListener {
-            val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
-            val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
+            val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE"
+            val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10
 
-            val alarmManager =
-                requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if(binding.exit.text == "STOP") {
-                requireContext().stopService(MainActivity.serviceIntent);
-                alarmManager.cancel(HeartRateAlarmReceiver.alarmIntent);
-                HeartRateAlarmReceiver.alarmIntent.cancel();
+                requireContext().stopService(MainActivity.serviceIntent)
                 binding.exit.text = "START"
             } else {
                 binding.exit.text = "STOP"
                 MainActivity.serviceIntent = Intent(requireContext(), HeartRateService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    MainActivity.serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
-                    requireContext().startForegroundService(MainActivity.serviceIntent);
+                    MainActivity.serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+                    requireContext().startForegroundService(MainActivity.serviceIntent)
                 } else {
-                    requireContext().startService(MainActivity.serviceIntent);
-                }
-                HeartRateAlarmReceiver.alarmIntent = PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    Intent(context, HeartRateAlarmReceiver::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    // Android 12 (API 31) and above
-                    if (alarmManager.canScheduleExactAlarms()) {
-                        alarmManager.setExactAndAllowWhileIdle(
-                            AlarmManager.RTC_WAKEUP,
-                            System.currentTimeMillis() + 1000,
-                            HeartRateAlarmReceiver.alarmIntent
-                        )
-                    } else {
-                        println("alarm permission not granted")
-                    }
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    // Android 6.0 (API 23) to Android 11 (API 30)
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        System.currentTimeMillis() + 1000,
-                        HeartRateAlarmReceiver.alarmIntent
-                    )
-                } else {
-                    // Below Android 6.0 (API 23)
-                    alarmManager.setExact(
-                        AlarmManager.RTC_WAKEUP,
-                        System.currentTimeMillis() + 1000,
-                        HeartRateAlarmReceiver.alarmIntent
-                    )
+                    requireContext().startService(MainActivity.serviceIntent)
                 }
             }
         }
