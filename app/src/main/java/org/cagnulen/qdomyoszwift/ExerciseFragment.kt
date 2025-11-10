@@ -125,16 +125,17 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10
 
             if(binding.exit.text == "STOP") {
-                requireContext().stopService(MainActivity.serviceIntent)
+                MainActivity.serviceIntent?.let { requireContext().stopService(it) }
                 binding.exit.text = "START"
             } else {
                 binding.exit.text = "STOP"
-                MainActivity.serviceIntent = Intent(requireContext(), HeartRateService::class.java)
+                val intent = Intent(requireContext(), HeartRateService::class.java)
+                MainActivity.serviceIntent = intent
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    MainActivity.serviceIntent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-                    requireContext().startForegroundService(MainActivity.serviceIntent)
+                    intent.putExtra(EXTRA_FOREGROUND_SERVICE_TYPE, FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+                    requireContext().startForegroundService(intent)
                 } else {
-                    requireContext().startService(MainActivity.serviceIntent)
+                    requireContext().startService(intent)
                 }
             }
         }
