@@ -22,14 +22,14 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "org.cagnulen.qdomyoszwift"
         minSdk 28
-        targetSdk 34
-        versionCode 10035
-        versionName "1.1.18"
+        targetSdk 35
+        versionCode 10036
+        versionName "1.1.19"
     }
     buildTypes {
         release {
