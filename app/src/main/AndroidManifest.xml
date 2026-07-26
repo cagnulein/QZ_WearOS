@@ -30,6 +30,7 @@
     <!-- For showing an ongoing notification. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <!-- When an app targets Android 11 (API level 30) or higher and queries for information about
          the other apps that are installed on a device, the system filters this information by

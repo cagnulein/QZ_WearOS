@@ -30,6 +30,7 @@ android {
         targetSdk 35
         versionCode 10036
         versionName "1.1.19"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -105,5 +106,10 @@ dependencies {
     implementation "androidx.core:core-splashscreen:1.1.0-rc01"
 
     compileOnly 'com.google.android.wearable:wearable:2.9.0'
+
+    // Instrumented tests
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
 }
 
