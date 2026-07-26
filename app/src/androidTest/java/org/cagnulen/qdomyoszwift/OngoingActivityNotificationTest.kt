@@ -35,7 +35,11 @@ class OngoingActivityNotificationTest {
 
         val method = ExerciseService::class.java.getDeclaredMethod("postOngoingActivityNotification")
         method.isAccessible = true
-        method.invoke(service)
+        try {
+            method.invoke(service)
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            throw AssertionError("postOngoingActivityNotification() threw: ${e.cause}", e.cause)
+        }
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
