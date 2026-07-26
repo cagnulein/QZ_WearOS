@@ -43,13 +43,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-wear-30
+          key: avd-wear-34
 
       - name: Create AVD snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 34
           target: android-wear
           arch: x86_64
           profile: wear_square
@@ -61,7 +61,7 @@ jobs:
       - name: Run instrumented test on Wear OS emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: 34
           target: android-wear
           arch: x86_64
           profile: wear_square
