@@ -30,6 +30,9 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Remove hardcoded local JDK path from gradle.properties
+        run: sed -i '/org.gradle.java.home/d' gradle.properties
+
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
