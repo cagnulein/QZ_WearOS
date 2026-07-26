@@ -52,7 +52,7 @@ jobs:
           api-level: 34
           target: android-wear
           arch: x86_64
-          profile: wear_round
+          profile: wearos_small_round
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
@@ -64,7 +64,7 @@ jobs:
           api-level: 34
           target: android-wear
           arch: x86_64
-          profile: wear_round
+          profile: wearos_small_round
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
