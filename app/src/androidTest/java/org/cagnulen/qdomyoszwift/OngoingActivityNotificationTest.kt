@@ -3,7 +3,6 @@ package org.cagnulen.qdomyoszwift
 import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -13,6 +12,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 
 /**
@@ -75,11 +75,15 @@ class OngoingActivityNotificationTest {
         // Capture visual proof *while the service is still in the foreground*, before
         // ServiceTestRule's teardown unbinds/stops it. A screenshot taken by the CI script
         // after this test method returns is too late - the service is already gone by then.
+        // UiAutomation.takeScreenshot() returns null here (no focused window/Activity in this
+        // service-only test, and the emulator runs with -no-window), so shell out to the same
+        // screencap command the CI script used before - it captures the framebuffer directly
+        // and doesn't need window focus - but run it now, at the right moment.
         Thread.sleep(1500)
-        val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
-        if (screenshot != null) {
-            val outFile = File(context.getExternalFilesDir(null), "ongoing_activity_screenshot.png")
-            FileOutputStream(outFile).use { out -> screenshot.compress(Bitmap.CompressFormat.PNG, 100, out) }
-        }
+        val outFile = File(context.getExternalFilesDir(null), "ongoing_activity_screenshot.png")
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("screencap -p")
+            .let { pfd -> FileInputStream(pfd.fileDescriptor) }
+            .use { input -> FileOutputStream(outFile).use { output -> input.copyTo(output) } }
     }
 }
