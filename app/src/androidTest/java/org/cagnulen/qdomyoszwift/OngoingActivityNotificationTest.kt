@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.rule.ServiceTestRule
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,10 +61,21 @@ class OngoingActivityNotificationTest {
             .take(20)
             .onEach { if (it > 0) Thread.sleep(100) }
             .any { notificationManager.activeNotifications.any { n -> n.id == ONGOING_NOTIFICATION_ID } }
-        assertTrue("Ongoing activity notification was not posted", posted)
+
+        if (!posted) {
+            val activeIds = notificationManager.activeNotifications.joinToString { "${it.packageName}/${it.id}" }
+            val channel = notificationManager.getNotificationChannel(ONGOING_NOTIFICATION_CHANNEL)
+            val diagnostics = buildString {
+                appendLine("notificationsEnabled=${notificationManager.areNotificationsEnabled()}")
+                appendLine("channel=${channel?.id} importance=${channel?.importance}")
+                appendLine("activeNotifications=[$activeIds]")
+            }
+            throw AssertionError("Ongoing activity notification was not posted. Diagnostics:\n$diagnostics")
+        }
     }
 
     private companion object {
         const val ONGOING_NOTIFICATION_ID = 1
+        const val ONGOING_NOTIFICATION_CHANNEL = "org.cagnulen.qdomyoszwift.ONGOING_EXERCISE"
     }
 }
