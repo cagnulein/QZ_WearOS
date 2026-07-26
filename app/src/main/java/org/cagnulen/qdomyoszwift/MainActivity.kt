@@ -60,7 +60,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         private val BASE_PERMISSIONS = arrayOf(
             android.Manifest.permission.BODY_SENSORS,
             android.Manifest.permission.BLUETOOTH_CONNECT,
-            android.Manifest.permission.ACTIVITY_RECOGNITION
+            android.Manifest.permission.ACTIVITY_RECOGNITION,
+            android.Manifest.permission.POST_NOTIFICATIONS
         )
 
         // Permesso background da richiedere dopo
