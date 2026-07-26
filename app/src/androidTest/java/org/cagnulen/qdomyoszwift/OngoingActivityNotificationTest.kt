@@ -65,12 +65,10 @@ class OngoingActivityNotificationTest {
         if (!posted) {
             val activeIds = notificationManager.activeNotifications.joinToString { "${it.packageName}/${it.id}" }
             val channel = notificationManager.getNotificationChannel(ONGOING_NOTIFICATION_CHANNEL)
-            val diagnostics = buildString {
-                appendLine("notificationsEnabled=${notificationManager.areNotificationsEnabled()}")
-                appendLine("channel=${channel?.id} importance=${channel?.importance}")
-                appendLine("activeNotifications=[$activeIds]")
-            }
-            throw AssertionError("Ongoing activity notification was not posted. Diagnostics:\n$diagnostics")
+            val diagnostics = "notificationsEnabled=${notificationManager.areNotificationsEnabled()}" +
+                " | channel=${channel?.id} importance=${channel?.importance}" +
+                " | activeNotifications=[$activeIds]"
+            throw AssertionError("Ongoing activity notification was not posted. Diagnostics: $diagnostics")
         }
     }
 
