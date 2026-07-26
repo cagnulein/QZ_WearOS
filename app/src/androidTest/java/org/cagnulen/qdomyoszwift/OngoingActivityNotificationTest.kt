@@ -79,11 +79,21 @@ class OngoingActivityNotificationTest {
         // service-only test, and the emulator runs with -no-window), so shell out to the same
         // screencap command the CI script used before - it captures the framebuffer directly
         // and doesn't need window focus - but run it now, at the right moment.
+        //
+        // Use filesDir (app-private internal storage, always available) rather than
+        // getExternalFilesDir(null): that returned null on the Wear OS emulator image (no
+        // external storage mounted), and File(null, name) silently falls back to a relative
+        // path instead of throwing, so the previous run wrote the PNG somewhere adb couldn't
+        // find it even though the test itself reported success.
         Thread.sleep(1500)
-        val outFile = File(context.getExternalFilesDir(null), "ongoing_activity_screenshot.png")
+        val outFile = File(context.filesDir, "ongoing_activity_screenshot.png")
         InstrumentationRegistry.getInstrumentation().uiAutomation
             .executeShellCommand("screencap -p")
             .let { pfd -> FileInputStream(pfd.fileDescriptor) }
             .use { input -> FileOutputStream(outFile).use { output -> input.copyTo(output) } }
+
+        if (!outFile.exists() || outFile.length() == 0L) {
+            throw AssertionError("Screenshot was not written to ${outFile.absolutePath}")
+        }
     }
 }

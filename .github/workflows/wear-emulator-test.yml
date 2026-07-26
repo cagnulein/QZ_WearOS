@@ -75,8 +75,9 @@ jobs:
             ./gradlew :app:connectedDebugAndroidTest --stacktrace
             TEST_EXIT=$?
             # Screenshot taken by the test itself while the service was still in the
-            # foreground - this is the real proof, pulled from app-external storage.
-            adb pull /storage/emulated/0/Android/data/org.cagnulen.qdomyoszwift/files/ongoing_activity_screenshot.png ongoing-activity-screenshot.png || true
+            # foreground - this is the real proof, pulled from app-private internal storage
+            # (external storage isn't reliably mounted on this Wear OS emulator image).
+            adb pull /data/data/org.cagnulen.qdomyoszwift/files/ongoing_activity_screenshot.png ongoing-activity-screenshot.png || true
             # Screenshot taken after the whole test process/teardown has finished, kept
             # only for comparison/debugging - the service is expected to be gone by now.
             adb exec-out screencap -p > emulator-screenshot-after-teardown.png || true
