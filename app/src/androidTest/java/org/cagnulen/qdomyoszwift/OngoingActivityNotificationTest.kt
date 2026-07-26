@@ -14,11 +14,11 @@ import org.junit.runner.RunWith
 /**
  * Regression test for the Google Play "Wear app quality: Missing ongoing activity" rejection.
  *
- * ExerciseService declares android:foregroundServiceType="location". Starting a foreground
- * service of that type without the FOREGROUND_SERVICE_LOCATION permission throws a
- * SecurityException on API 34+, which is why the startForeground() call was previously
- * disabled. This test exercises the exact same call path and fails if it crashes or if the
- * Ongoing Activity notification never reaches the NotificationManager.
+ * ExerciseService starts a foreground service to post the Ongoing Activity notification.
+ * Android 14+ (API 34) enforces that the declared foregroundServiceType's required
+ * permissions are held, or startForeground() throws a SecurityException - which is why the
+ * call was previously disabled. This test exercises the exact same call path and fails if it
+ * crashes or if the Ongoing Activity notification never reaches the NotificationManager.
  */
 @RunWith(AndroidJUnit4::class)
 class OngoingActivityNotificationTest {

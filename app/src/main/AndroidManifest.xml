@@ -30,7 +30,7 @@
     <!-- For showing an ongoing notification. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
 
     <!-- When an app targets Android 11 (API level 30) or higher and queries for information about
          the other apps that are installed on a device, the system filters this information by
@@ -71,10 +71,13 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
-        <!-- Add foreground service location permission for exercise tracking -->
+        <!-- Exercise metrics come from Health Services sensors (heart rate, calories,
+             distance), not GPS: isGpsEnabled is false in HealthServicesManager. The
+             "health" foreground service type matches that and only needs the
+             BODY_SENSORS/ACTIVITY_RECOGNITION permissions already declared above. -->
         <service
             android:name=".ExerciseService"
-            android:foregroundServiceType="location"
+            android:foregroundServiceType="health"
             android:exported="false" />
     </application>
     <uses-sdk tools:overrideLibrary="androidx.health.services.client"></uses-sdk>
