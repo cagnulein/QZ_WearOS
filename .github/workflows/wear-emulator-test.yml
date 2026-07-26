@@ -74,7 +74,12 @@ jobs:
             LOGCAT_PID=$!
             ./gradlew :app:connectedDebugAndroidTest --stacktrace
             TEST_EXIT=$?
-            adb exec-out screencap -p > emulator-screenshot.png || true
+            # Screenshot taken by the test itself while the service was still in the
+            # foreground - this is the real proof, pulled from app-external storage.
+            adb pull /storage/emulated/0/Android/data/org.cagnulen.qdomyoszwift/files/ongoing_activity_screenshot.png ongoing-activity-screenshot.png || true
+            # Screenshot taken after the whole test process/teardown has finished, kept
+            # only for comparison/debugging - the service is expected to be gone by now.
+            adb exec-out screencap -p > emulator-screenshot-after-teardown.png || true
             kill $LOGCAT_PID || true
             exit $TEST_EXIT
 
@@ -85,12 +90,19 @@ jobs:
           name: logcat
           path: logcat.txt
 
-      - name: Upload emulator screenshot
+      - name: Upload ongoing activity screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-screenshot
-          path: emulator-screenshot.png
+          name: ongoing-activity-screenshot
+          path: ongoing-activity-screenshot.png
+
+      - name: Upload post-teardown emulator screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-screenshot-after-teardown
+          path: emulator-screenshot-after-teardown.png
 
       - name: Upload instrumented test report
         if: always()

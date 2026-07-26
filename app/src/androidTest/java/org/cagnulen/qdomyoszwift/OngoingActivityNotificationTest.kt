@@ -3,6 +3,7 @@ package org.cagnulen.qdomyoszwift
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -11,6 +12,8 @@ import androidx.test.rule.ServiceTestRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Regression test for the Google Play "Wear app quality: Missing ongoing activity" rejection.
@@ -67,6 +70,16 @@ class OngoingActivityNotificationTest {
                 "postOngoingActivityNotification() returned without setting isForeground=true, " +
                     "meaning startForeground() was never reached"
             )
+        }
+
+        // Capture visual proof *while the service is still in the foreground*, before
+        // ServiceTestRule's teardown unbinds/stops it. A screenshot taken by the CI script
+        // after this test method returns is too late - the service is already gone by then.
+        Thread.sleep(1500)
+        val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        if (screenshot != null) {
+            val outFile = File(context.getExternalFilesDir(null), "ongoing_activity_screenshot.png")
+            FileOutputStream(outFile).use { out -> screenshot.compress(Bitmap.CompressFormat.PNG, 100, out) }
         }
     }
 }
