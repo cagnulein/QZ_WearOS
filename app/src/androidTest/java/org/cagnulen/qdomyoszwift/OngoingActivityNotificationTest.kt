@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.rule.ServiceTestRule
 import org.junit.Assert.assertTrue
@@ -43,15 +44,23 @@ class OngoingActivityNotificationTest {
 
         val method = ExerciseService::class.java.getDeclaredMethod("postOngoingActivityNotification")
         method.isAccessible = true
-        try {
-            method.invoke(service)
-        } catch (e: java.lang.reflect.InvocationTargetException) {
-            throw AssertionError("postOngoingActivityNotification() threw: ${e.cause}", e.cause)
+        var invocationError: Throwable? = null
+        // startForeground() should be called on the service's main thread, same as production use.
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            try {
+                method.invoke(service)
+            } catch (e: java.lang.reflect.InvocationTargetException) {
+                invocationError = e.cause
+            }
         }
+        invocationError?.let { throw AssertionError("postOngoingActivityNotification() threw: $it", it) }
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val posted = notificationManager.activeNotifications.any { it.id == ONGOING_NOTIFICATION_ID }
+        val posted = generateSequence(0) { it + 1 }
+            .take(20)
+            .onEach { if (it > 0) Thread.sleep(100) }
+            .any { notificationManager.activeNotifications.any { n -> n.id == ONGOING_NOTIFICATION_ID } }
         assertTrue("Ongoing activity notification was not posted", posted)
     }
 
