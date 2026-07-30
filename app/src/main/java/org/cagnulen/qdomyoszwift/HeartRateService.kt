@@ -20,6 +20,8 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
 import com.google.android.gms.wearable.DataClient
@@ -150,12 +152,27 @@ class HeartRateService : Service(), SensorEventListener {
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Heart Rate Monitoring")
             .setContentText("Monitoring your heart rate")
             .setSmallIcon(R.drawable.ic_run)
             .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_WORKOUT)
+
+        // This is the service that's actually running for the whole duration of a workout
+        // (started as soon as the app opens, see MainActivity.onAllPermissionsGranted), unlike
+        // ExerciseService which the exercise-tracking UI never calls into. Registering the
+        // Ongoing Activity here is what makes the watch face indicator / recent-apps chip show
+        // up during real usage.
+        val ongoingActivity = OngoingActivity.Builder(applicationContext, NOTIFICATION_ID, notificationBuilder)
+            .setStaticIcon(R.drawable.ic_run)
+            .setTouchIntent(pendingIntent)
+            .setStatus(Status.Builder().addTemplate("Monitoring heart rate").build())
             .build()
+        ongoingActivity.apply(applicationContext)
+
+        return notificationBuilder.build()
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
