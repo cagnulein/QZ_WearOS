@@ -126,10 +126,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         return ContextCompat.checkSelfPermission(this, BACKGROUND_PERMISSION) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun hasAllRequiredPermissions(): Boolean {
-        return hasBasePermissions() && hasBackgroundPermission()
-    }
-
     private val REQUEST_CODE_BASE_PERMISSIONS = 123
     private val REQUEST_CODE_BACKGROUND_PERMISSION = 124
 
@@ -149,28 +145,29 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         when (requestCode) {
             REQUEST_CODE_BASE_PERMISSIONS -> {
                 val allPermissionsGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-                if (allPermissionsGranted) {
-                    Log.d(TAG, "Base permissions granted, requesting background permission")
-                    // Richiedi il permesso background
-                    requestBackgroundPermission()
-                } else {
-                    Log.w(TAG, "Base permissions not granted. HeartRateService will not start.")
-                }
+                Log.d(TAG, "Base permissions result (all granted: $allPermissionsGranted), starting HeartRateService")
+                // Avviato in ogni caso: e' questo servizio a pubblicare l'Ongoing Activity
+                // richiesta dalle norme Wear OS, e HeartRateService degrada da solo se manca
+                // qualche permesso. Subordinarlo ai permessi significava non mostrare nulla.
+                onBasePermissionsGranted()
+                // Il permesso background e' un extra: la sua richiesta non deve bloccare nulla.
+                requestBackgroundPermission()
             }
             REQUEST_CODE_BACKGROUND_PERMISSION -> {
                 val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
                 if (granted) {
-                    Log.d(TAG, "Background permission granted, starting HeartRateService")
-                    // Avvia il servizio solo se tutti i permessi sono stati concessi
-                    onAllPermissionsGranted()
+                    Log.d(TAG, "Background sensors permission granted")
                 } else {
-                    Log.w(TAG, "Background permission not granted. HeartRateService will not start.")
+                    // Il dialogo di sistema per BODY_SENSORS_BACKGROUND offre solo "While using
+                    // app"/"Don't allow" e rimanda a una schermata di Impostazioni: la maggior
+                    // parte degli utenti non lo concede. Il servizio resta comunque attivo.
+                    Log.w(TAG, "Background sensors permission not granted; HeartRateService keeps running in foreground")
                 }
             }
         }
     }
 
-    private fun onAllPermissionsGranted() {
+    private fun onBasePermissionsGranted() {
         val EXTRA_FOREGROUND_SERVICE_TYPE: String = "FOREGROUND_SERVICE_TYPE";
         val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10;
 
@@ -185,18 +182,18 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
     }
 
     private fun startHeartRateService() {
-        if (!hasAllRequiredPermissions()) {
-            if (!permissionsRequested) {
-                Log.d(TAG, "Requesting permissions for the first time")
-                permissionsRequested = true
-                // Richiedi prima i permessi base
-                requestBasePermissions()
-            } else {
-                Log.w(TAG, "Permissions already requested but not granted")
-            }
-        } else {
-            Log.d(TAG, "All permissions already granted")
-            onAllPermissionsGranted()
+        // L'Ongoing Activity non deve mai dipendere dall'esito dei permessi: se mancano li
+        // chiediamo (e il servizio parte nella callback), altrimenti partiamo subito.
+        if (!hasBasePermissions() && !permissionsRequested) {
+            Log.d(TAG, "Requesting permissions for the first time")
+            permissionsRequested = true
+            requestBasePermissions()
+            return
+        }
+        Log.d(TAG, "Starting HeartRateService")
+        onBasePermissionsGranted()
+        if (!hasBackgroundPermission()) {
+            requestBackgroundPermission()
         }
     }
 }

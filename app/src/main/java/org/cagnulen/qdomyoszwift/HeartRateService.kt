@@ -1,5 +1,6 @@
 package org.cagnulen.qdomyoszwift
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -20,6 +22,7 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
 import com.google.android.gms.tasks.Task
@@ -63,8 +66,8 @@ class HeartRateService : Service(), SensorEventListener {
         }
     }
 
-    private lateinit var sensorManager: SensorManager
-    private lateinit var heartRateSensor: Sensor
+    private var sensorManager: SensorManager? = null
+    private var heartRateSensor: Sensor? = null
 
     private lateinit var wakeLock: PowerManager.WakeLock
     private val handler = Handler(Looper.getMainLooper())
@@ -104,21 +107,25 @@ class HeartRateService : Service(), SensorEventListener {
             Log.d("HeartRateService", "Wake lock released")
         }
 
-        sensorManager.unregisterListener(this)
+        sensorManager?.unregisterListener(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            createNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-        )
+        startForegroundCompat()
 
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)!!
-        val success = sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL)
-        Log.d("HeartRateService", "onStartCommand sensor registered: $success")
+        val manager = getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorManager = manager
+        // getDefaultSensor restituisce null se manca BODY_SENSORS (o se l'orologio non ha il
+        // sensore): in quel caso il servizio resta comunque vivo, perche' e' lui a pubblicare
+        // l'Ongoing Activity richiesta dalle norme Wear OS.
+        val sensor = manager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        heartRateSensor = sensor
+        if (sensor == null) {
+            Log.w("HeartRateService", "Heart rate sensor unavailable (permission denied or no sensor)")
+        } else {
+            val success = manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            Log.d("HeartRateService", "onStartCommand sensor registered: $success")
+        }
 
         // Start periodic heart rate updates using Handler
         handler.post(sendHeartRateRunnable)
@@ -126,6 +133,43 @@ class HeartRateService : Service(), SensorEventListener {
 
         return START_STICKY
     }
+
+    /**
+     * Su Android 14+ il tipo "connectedDevice" richiede BLUETOOTH_CONNECT concesso a runtime e
+     * "health" richiede BODY_SENSORS/ACTIVITY_RECOGNITION: se l'utente li nega, startForeground
+     * con quel tipo lancia SecurityException. Scegliamo il tipo in base a cio' che abbiamo
+     * davvero, con un ultimo fallback senza tipo, cosi' l'Ongoing Activity viene pubblicata
+     * comunque invece di far crashare la app.
+     */
+    private fun startForegroundCompat() {
+        val notification = createNotification()
+        val type = when {
+            hasPermission(Manifest.permission.BLUETOOTH_CONNECT) ->
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            hasPermission(Manifest.permission.BODY_SENSORS) ||
+                hasPermission(Manifest.permission.ACTIVITY_RECOGNITION) ->
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+            else -> null
+        }
+        if (type != null) {
+            try {
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
+                Log.d("HeartRateService", "startForeground with type=$type")
+                return
+            } catch (e: Exception) {
+                Log.e("HeartRateService", "startForeground failed with type=$type", e)
+            }
+        }
+        try {
+            startForeground(NOTIFICATION_ID, notification)
+            Log.d("HeartRateService", "startForeground without explicit type")
+        } catch (e: Exception) {
+            Log.e("HeartRateService", "startForeground failed", e)
+        }
+    }
+
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     override fun onBind(intent: Intent?): IBinder? = null
 

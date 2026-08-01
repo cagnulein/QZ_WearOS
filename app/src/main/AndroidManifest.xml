@@ -70,10 +70,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Due tipi dichiarati: il servizio sceglie a runtime quello coperto dai permessi
+             effettivamente concessi (vedi HeartRateService.startForegroundCompat), cosi' l'utente
+             che nega BLUETOOTH_CONNECT vede comunque l'Ongoing Activity. -->
         <service
             android:name=".HeartRateService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|health" />
 
         <!-- Exercise metrics come from Health Services sensors (heart rate, calories,
              distance), not GPS: isGpsEnabled is false in HealthServicesManager. The
