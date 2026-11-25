@@ -20,8 +20,6 @@ class PhoneCommandListener : WearableListenerService() {
             else -> return
         }
         Log.d(TAG, "phone says ${event.path}")
-        // this phone app wakes the watch for workouts: from now on the watch sleeps in between
-        HeartRateService.markPhoneDrives(this)
         if (HeartRateService.command(action)) return
         if (action == HeartRateService.ACTION_SLEEP) return
 

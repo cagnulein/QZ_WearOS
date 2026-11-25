@@ -26,7 +26,8 @@ import androidx.core.content.ContextCompat
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
 import com.google.android.gms.tasks.Task
-import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.CapabilityClient
+import com.google.android.gms.wearable.CapabilityInfo
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataItem
 import com.google.android.gms.wearable.PutDataMapRequest
@@ -56,21 +57,14 @@ class HeartRateService : Service(), SensorEventListener {
         @Volatile
         private var instance: HeartRateService? = null
 
-        // Set the first time phone QZ sends /qz/hr/wake or /qz/hr/sleep. Until then the phone
-        // app is an older one that never wakes the watch, so the service behaves as it always
-        // did: awake from the moment it starts, with no sleep of its own. A newer watch app
-        // with an older phone app must not lose the heart rate mid-workout.
-        private const val PREFS = "qz_heart_rate"
-        private const val KEY_PHONE_DRIVES = "phone_drives_heart_rate"
-
-        @JvmStatic
-        fun markPhoneDrives(context: Context) {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putBoolean(KEY_PHONE_DRIVES, true).apply()
-        }
-
-        private fun phoneDrives(context: Context): Boolean =
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_PHONE_DRIVES, false)
+        // Wear OS capability that phone QZ declares when it sends /qz/hr/wake and /qz/hr/sleep
+        // (res/values/wear.xml of the phone app). Checked at run time, so an older phone app,
+        // or one downgraded after using the new protocol, puts the watch back in legacy mode:
+        // awake from the moment the service starts, with no sleep of its own, as before. The
+        // phone and watch apps are released independently.
+        const val PHONE_CAPABILITY = "qz_hr_wake_sleep"
+        private const val START_RESTART = "restart"
+        private const val START_MANUAL = "manual"
 
         /** Called from PhoneCommandListener. Returns false if the service is not running. */
         @JvmStatic
@@ -87,19 +81,13 @@ class HeartRateService : Service(), SensorEventListener {
             val putDataMapRequest = PutDataMapRequest.create("/qz")
             putDataMapRequest.dataMap.putInt("heart_rate", heartrate)
 
+            // asynchronous: nothing waits on the task, so a slow data layer can't pile up threads
             val task: Task<DataItem> = dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
-
             task.addOnSuccessListener { dataItem ->
-                Log.d(
-                    "sendHeartRateToPhone",
-                    "Sending heart rate was successful: $dataItem"
-                )
+                Log.d("sendHeartRateToPhone", "Sending heart rate was successful: $dataItem")
             }
-
-            try {
-                Tasks.await(task)
-            } catch (exception: Exception) {
-                // Handle any exceptions that might occur while awaiting the task
+            task.addOnFailureListener { e ->
+                Log.w("sendHeartRateToPhone", "Sending heart rate failed", e)
             }
         }
     }
@@ -111,6 +99,13 @@ class HeartRateService : Service(), SensorEventListener {
     private val handler = Handler(Looper.getMainLooper())
     private var awake = false
     private var awakeUntil = 0L
+    // null until the first capability check answers; true = a phone app that wakes the watch
+    private var phoneDrives: Boolean? = null
+    // what started the service, applied once phoneDrives is known
+    private var pendingStart: String? = null
+    private val capabilityListener = CapabilityClient.OnCapabilityChangedListener { info ->
+        handler.post { setPhoneDrives(info.nodes.isNotEmpty(), "capability changed") }
+    }
 
     // Runnable that sends heart rate every 1 second while awake
     private val sendHeartRateRunnable = object : Runnable {
@@ -121,21 +116,80 @@ class HeartRateService : Service(), SensorEventListener {
                 goToSleep()
                 return
             }
-            // sendHeartRateToPhone blocks on the task; keep it off the main thread
-            Thread { sendHeartRateToPhone(this@HeartRateService) }.start()
+            sendHeartRateToPhone(this@HeartRateService)
             handler.postDelayed(this, 1000) // Schedule next update in 1 second
         }
     }
 
     private fun handle(action: String) {
+        // a message from the phone means its app speaks the protocol
+        setPhoneDrives(true, "message from the phone")
         when (action) {
             ACTION_SLEEP -> goToSleep()
             else -> wakeUp(PHONE_WAKE_MS)
         }
     }
 
+    private fun applyStart(reason: String) {
+        val drives = phoneDrives == true
+        when (reason) {
+            ACTION_SLEEP -> goToSleep()
+            ACTION_WAKE -> wakeUp(PHONE_WAKE_MS)
+            // restarted by the system after a kill (null intent): asleep until the phone asks,
+            // or awake as before with an older phone app
+            START_RESTART -> if (drives) updateNotification() else wakeUpForever()
+            // opened by hand
+            else -> if (drives) wakeUp(MANUAL_WAKE_MS) else wakeUpForever()
+        }
+    }
+
+    // Legacy mode: awake until the service is stopped, as before
+    private fun wakeUpForever() {
+        awakeUntil = Long.MAX_VALUE
+        startSensing()
+    }
+
+    private fun setPhoneDrives(drives: Boolean, why: String) {
+        val before = phoneDrives
+        phoneDrives = drives
+        if (before == drives) return
+        Log.d("HeartRateService", "phone app wakes the watch: $drives ($why)")
+        if (before == null) {
+            pendingStart?.let { applyStart(it) }
+            pendingStart = null
+            return
+        }
+        if (drives) {
+            // legacy -> phone mode: the endless legacy deadline must not carry over
+            if (awake && awakeUntil > System.currentTimeMillis() + MANUAL_WAKE_MS)
+                awakeUntil = System.currentTimeMillis() + PHONE_WAKE_MS
+        } else if (awake) {
+            // phone app downgraded: back to legacy, awake until stopped, as before
+            awakeUntil = Long.MAX_VALUE
+        }
+    }
+
+    private fun checkPhoneCapability() {
+        Wearable.getCapabilityClient(this)
+            .getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_ALL)
+            .addOnSuccessListener { info: CapabilityInfo ->
+                setPhoneDrives(info.nodes.isNotEmpty(), "capability check")
+            }
+            .addOnFailureListener { e ->
+                Log.w("HeartRateService", "capability check failed, legacy mode", e)
+                setPhoneDrives(false, "capability check failed")
+            }
+    }
+
     private fun wakeUp(forMs: Long) {
-        awakeUntil = maxOf(awakeUntil, System.currentTimeMillis() + minOf(forMs, Long.MAX_VALUE / 2))
+        val now = System.currentTimeMillis()
+        // in phone mode a deadline far beyond any wake (left from legacy mode) is dropped
+        val current = if (awakeUntil > now + MANUAL_WAKE_MS) 0L else awakeUntil
+        awakeUntil = maxOf(current, now + forMs)
+        startSensing()
+    }
+
+    private fun startSensing() {
         if (awake) return
         awake = true
         if (!wakeLock.isHeld) wakeLock.acquire()
@@ -164,7 +218,7 @@ class HeartRateService : Service(), SensorEventListener {
         sensorManager?.unregisterListener(this)
         heartrate = 0
         // tell the phone the reading is gone, so it does not keep a stale number
-        Thread { sendHeartRateToPhone(this@HeartRateService) }.start()
+        sendHeartRateToPhone(this@HeartRateService)
         if (wakeLock.isHeld) wakeLock.release()
         updateNotification()
         Log.d("HeartRateService", "Asleep")
@@ -191,12 +245,15 @@ class HeartRateService : Service(), SensorEventListener {
         )
         wakeLock.setReferenceCounted(false)
         instance = this
+        Wearable.getCapabilityClient(this).addListener(capabilityListener, PHONE_CAPABILITY)
+        checkPhoneCapability()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         instance = null
         awake = false
+        Wearable.getCapabilityClient(this).removeListener(capabilityListener)
 
         // Stop periodic heart rate updates
         handler.removeCallbacks(sendHeartRateRunnable)
@@ -213,14 +270,18 @@ class HeartRateService : Service(), SensorEventListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundCompat()
 
-        when {
-            intent?.action == ACTION_SLEEP -> goToSleep()
-            intent?.action == ACTION_WAKE -> wakeUp(PHONE_WAKE_MS)
-            // an older phone app never wakes the watch: awake until the service is stopped, as before
-            !phoneDrives(this) -> wakeUp(Long.MAX_VALUE / 2)
-            // null intent = restarted by the system after a kill: stay asleep until the phone asks
-            intent == null -> updateNotification()
-            else -> wakeUp(MANUAL_WAKE_MS)
+        val reason = when {
+            intent == null -> START_RESTART
+            intent.action == ACTION_SLEEP || intent.action == ACTION_WAKE -> intent.action!!
+            else -> START_MANUAL
+        }
+        if (reason == ACTION_SLEEP || reason == ACTION_WAKE) setPhoneDrives(true, "started by the phone")
+        if (phoneDrives == null) {
+            // the capability check started in onCreate answers in a moment
+            pendingStart = reason
+            updateNotification()
+        } else {
+            applyStart(reason)
         }
 
         return START_STICKY
