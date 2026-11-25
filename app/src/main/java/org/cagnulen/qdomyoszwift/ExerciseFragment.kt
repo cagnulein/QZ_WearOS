@@ -402,9 +402,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun performOneTimeUiUpdate() {
-        val service = checkNotNull(serviceConnection.exerciseService) {
-            "Failed to achieve ExerciseService instance"
-        }
+        // ambient mode can fire before ExerciseService is bound; skip instead of crashing
+        val service = serviceConnection.exerciseService ?: return
         updateExerciseStatus(service.exerciseState.value)
         updateLaps(service.exerciseLaps.value)
 
@@ -459,9 +458,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         }
 
         private fun readHeartRate() {
-            val service = checkNotNull(serviceConnection.exerciseService) {
-                "Failed to achieve ExerciseService instance"
-            }
+            // ambient mode can fire before ExerciseService is bound; skip instead of crashing
+            val service = serviceConnection.exerciseService ?: return
             updateExerciseStatus(service.exerciseState.value)
             updateLaps(service.exerciseLaps.value)
 
