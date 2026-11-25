@@ -82,6 +82,20 @@
              distance), not GPS: isGpsEnabled is false in HealthServicesManager. The
              "health" foreground service type matches that and only needs the
              BODY_SENSORS/ACTIVITY_RECOGNITION permissions already declared above. -->
+        <!-- Phone QZ wakes the heart-rate service when a walk starts and puts it to sleep
+             when it ends. -->
+        <service
+            android:name=".PhoneCommandListener"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/qz/hr"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".ExerciseService"
             android:foregroundServiceType="health"

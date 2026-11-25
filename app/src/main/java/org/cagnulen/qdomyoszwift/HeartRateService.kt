@@ -42,6 +42,44 @@ class HeartRateService : Service(), SensorEventListener {
         @JvmStatic
         var heartrate: Int = 0
 
+        // Awake = sensor on, wake lock held, heart rate sent every second.
+        // Asleep = none of that; the service only stays alive to hear the phone.
+        const val ACTION_WAKE = "org.cagnulen.qdomyoszwift.HR_WAKE"
+        const val ACTION_SLEEP = "org.cagnulen.qdomyoszwift.HR_SLEEP"
+
+        // How long one wake from the phone lasts. Phone QZ repeats it every minute
+        // while you walk, so if the phone goes quiet the watch falls asleep by itself.
+        private const val PHONE_WAKE_MS = 3 * 60 * 1000L
+        // Opening QZ on the watch by hand keeps it awake this long.
+        private const val MANUAL_WAKE_MS = 5 * 60 * 1000L
+
+        @Volatile
+        private var instance: HeartRateService? = null
+
+        // Set the first time phone QZ sends /qz/hr/wake or /qz/hr/sleep. Until then the phone
+        // app is an older one that never wakes the watch, so the service behaves as it always
+        // did: awake from the moment it starts, with no sleep of its own. A newer watch app
+        // with an older phone app must not lose the heart rate mid-workout.
+        private const val PREFS = "qz_heart_rate"
+        private const val KEY_PHONE_DRIVES = "phone_drives_heart_rate"
+
+        @JvmStatic
+        fun markPhoneDrives(context: Context) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_PHONE_DRIVES, true).apply()
+        }
+
+        private fun phoneDrives(context: Context): Boolean =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_PHONE_DRIVES, false)
+
+        /** Called from PhoneCommandListener. Returns false if the service is not running. */
+        @JvmStatic
+        fun command(action: String): Boolean {
+            val svc = instance ?: return false
+            svc.handler.post { svc.handle(action) }
+            return true
+        }
+
         @JvmStatic
         fun sendHeartRateToPhone(context: Context) {
             val dataClient: DataClient = Wearable.getDataClient(context)
@@ -71,12 +109,73 @@ class HeartRateService : Service(), SensorEventListener {
 
     private lateinit var wakeLock: PowerManager.WakeLock
     private val handler = Handler(Looper.getMainLooper())
+    private var awake = false
+    private var awakeUntil = 0L
 
-    // Runnable that sends heart rate every 1 second
+    // Runnable that sends heart rate every 1 second while awake
     private val sendHeartRateRunnable = object : Runnable {
         override fun run() {
-            sendHeartRateToPhone(this@HeartRateService)
+            if (!awake) return
+            if (System.currentTimeMillis() > awakeUntil) {
+                Log.d("HeartRateService", "No wake from the phone in time, going to sleep")
+                goToSleep()
+                return
+            }
+            // sendHeartRateToPhone blocks on the task; keep it off the main thread
+            Thread { sendHeartRateToPhone(this@HeartRateService) }.start()
             handler.postDelayed(this, 1000) // Schedule next update in 1 second
+        }
+    }
+
+    private fun handle(action: String) {
+        when (action) {
+            ACTION_SLEEP -> goToSleep()
+            else -> wakeUp(PHONE_WAKE_MS)
+        }
+    }
+
+    private fun wakeUp(forMs: Long) {
+        awakeUntil = maxOf(awakeUntil, System.currentTimeMillis() + minOf(forMs, Long.MAX_VALUE / 2))
+        if (awake) return
+        awake = true
+        if (!wakeLock.isHeld) wakeLock.acquire()
+        val manager = sensorManager
+            ?: (getSystemService(SENSOR_SERVICE) as SensorManager).also { sensorManager = it }
+        // null if BODY_SENSORS is missing or there is no sensor; the service stays up anyway
+        val sensor = manager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        heartRateSensor = sensor
+        if (sensor == null) {
+            Log.w("HeartRateService", "Heart rate sensor unavailable (permission denied or no sensor)")
+        } else {
+            val success = manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            Log.d("HeartRateService", "sensor registered: $success")
+        }
+        handler.removeCallbacks(sendHeartRateRunnable)
+        handler.post(sendHeartRateRunnable)
+        updateNotification()
+        Log.d("HeartRateService", "Awake")
+    }
+
+    private fun goToSleep() {
+        awakeUntil = 0L
+        if (!awake) return
+        awake = false
+        handler.removeCallbacks(sendHeartRateRunnable)
+        sensorManager?.unregisterListener(this)
+        heartrate = 0
+        // tell the phone the reading is gone, so it does not keep a stale number
+        Thread { sendHeartRateToPhone(this@HeartRateService) }.start()
+        if (wakeLock.isHeld) wakeLock.release()
+        updateNotification()
+        Log.d("HeartRateService", "Asleep")
+    }
+
+    private fun updateNotification() {
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.notify(NOTIFICATION_ID, createNotification())
+        } catch (e: Exception) {
+            Log.e("HeartRateService", "notification update failed", e)
         }
     }
 
@@ -90,13 +189,14 @@ class HeartRateService : Service(), SensorEventListener {
             PowerManager.PARTIAL_WAKE_LOCK,
             "QZ:HeartRateMonitoring"
         )
-        wakeLock.acquire()
-
-        Log.d("HeartRateService", "Wake lock acquired")
+        wakeLock.setReferenceCounted(false)
+        instance = this
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        instance = null
+        awake = false
 
         // Stop periodic heart rate updates
         handler.removeCallbacks(sendHeartRateRunnable)
@@ -113,23 +213,15 @@ class HeartRateService : Service(), SensorEventListener {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForegroundCompat()
 
-        val manager = getSystemService(SENSOR_SERVICE) as SensorManager
-        sensorManager = manager
-        // getDefaultSensor restituisce null se manca BODY_SENSORS (o se l'orologio non ha il
-        // sensore): in quel caso il servizio resta comunque vivo, perche' e' lui a pubblicare
-        // l'Ongoing Activity richiesta dalle norme Wear OS.
-        val sensor = manager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
-        heartRateSensor = sensor
-        if (sensor == null) {
-            Log.w("HeartRateService", "Heart rate sensor unavailable (permission denied or no sensor)")
-        } else {
-            val success = manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
-            Log.d("HeartRateService", "onStartCommand sensor registered: $success")
+        when {
+            intent?.action == ACTION_SLEEP -> goToSleep()
+            intent?.action == ACTION_WAKE -> wakeUp(PHONE_WAKE_MS)
+            // an older phone app never wakes the watch: awake until the service is stopped, as before
+            !phoneDrives(this) -> wakeUp(Long.MAX_VALUE / 2)
+            // null intent = restarted by the system after a kill: stay asleep until the phone asks
+            intent == null -> updateNotification()
+            else -> wakeUp(MANUAL_WAKE_MS)
         }
-
-        // Start periodic heart rate updates using Handler
-        handler.post(sendHeartRateRunnable)
-        Log.d("HeartRateService", "Started periodic heart rate updates")
 
         return START_STICKY
     }
@@ -196,9 +288,11 @@ class HeartRateService : Service(), SensorEventListener {
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        val text = if (awake) "Sending heart rate to QZ" else "Asleep until QZ on the phone starts a walk"
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Heart Rate Monitoring")
-            .setContentText("Monitoring your heart rate")
+            .setContentTitle("QZ heart rate")
+            .setContentText(text)
+            .setOnlyAlertOnce(true)
             .setSmallIcon(R.drawable.ic_run)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -212,7 +306,7 @@ class HeartRateService : Service(), SensorEventListener {
         val ongoingActivity = OngoingActivity.Builder(applicationContext, NOTIFICATION_ID, notificationBuilder)
             .setStaticIcon(R.drawable.ic_run)
             .setTouchIntent(pendingIntent)
-            .setStatus(Status.Builder().addTemplate("Monitoring heart rate").build())
+            .setStatus(Status.Builder().addTemplate(text).build())
             .build()
         ongoingActivity.apply(applicationContext)
 
