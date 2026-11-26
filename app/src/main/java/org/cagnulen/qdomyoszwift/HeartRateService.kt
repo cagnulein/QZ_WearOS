@@ -130,8 +130,10 @@ class HeartRateService : Service(), SensorEventListener {
     private var phoneDrives: Boolean? = null
     // what started the service, applied once phoneDrives is known
     private var pendingStart: String? = null
-    private val capabilityListener = CapabilityClient.OnCapabilityChangedListener { info ->
-        handler.post { setPhoneDrives(info.nodes.isNotEmpty(), "capability changed") }
+    // The listener reports only phones in range: a phone out of Bluetooth range is not a
+    // downgraded app, so look again at every paired phone (FILTER_ALL) before switching modes
+    private val capabilityListener = CapabilityClient.OnCapabilityChangedListener { _ ->
+        handler.post { if (!destroyed) checkPhoneCapability("capability changed") }
     }
 
     // Runnable that sends heart rate every 1 second while awake
@@ -199,11 +201,11 @@ class HeartRateService : Service(), SensorEventListener {
         }
     }
 
-    private fun checkPhoneCapability() {
+    private fun checkPhoneCapability(why: String = "capability check") {
         Wearable.getCapabilityClient(this)
             .getCapability(PHONE_CAPABILITY, CapabilityClient.FILTER_ALL)
             .addOnSuccessListener { info: CapabilityInfo ->
-                setPhoneDrives(info.nodes.isNotEmpty(), "capability check")
+                setPhoneDrives(info.nodes.isNotEmpty(), why)
             }
             .addOnFailureListener { e ->
                 Log.w("HeartRateService", "capability check failed, legacy mode", e)
