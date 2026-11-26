@@ -45,8 +45,30 @@ class HeartRateService : Service(), SensorEventListener {
 
         // Awake = sensor on, wake lock held, heart rate sent every second.
         // Asleep = none of that; the service only stays alive to hear the phone.
+        // ACTION_START: a workout started on the phone; ACTION_WAKE: keep-alive while it goes on
+        const val ACTION_START = "org.cagnulen.qdomyoszwift.HR_START"
         const val ACTION_WAKE = "org.cagnulen.qdomyoszwift.HR_WAKE"
         const val ACTION_SLEEP = "org.cagnulen.qdomyoszwift.HR_SLEEP"
+
+        // STOP pressed on the watch: the phone's keep-alive wakes must not start the service again,
+        // only the start of the next workout does. Kept on disk because STOP ends the service.
+        private const val PREFS = "qz_heart_rate"
+        private const val KEY_STOPPED_BY_HAND = "stopped_by_hand"
+
+        @JvmStatic
+        fun setStoppedByHand(context: Context, stopped: Boolean) {
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_STOPPED_BY_HAND, stopped).apply()
+        }
+
+        @JvmStatic
+        fun stoppedByHand(context: Context): Boolean =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_STOPPED_BY_HAND, false)
+
+        /** True while the service has the sensor on and sends heart rate. */
+        @JvmStatic
+        val isAwake: Boolean
+            get() = instance?.awake == true
 
         // How long one wake from the phone lasts. Phone QZ repeats it every minute
         // while you walk, so if the phone goes quiet the watch falls asleep by itself.
@@ -97,7 +119,12 @@ class HeartRateService : Service(), SensorEventListener {
 
     private lateinit var wakeLock: PowerManager.WakeLock
     private val handler = Handler(Looper.getMainLooper())
+    @Volatile
     private var awake = false
+    // set first thing in onDestroy: callbacks still queued (capability answers, phone messages)
+    // must not turn the sensor or the wake lock back on
+    @Volatile
+    private var destroyed = false
     private var awakeUntil = 0L
     // null until the first capability check answers; true = a phone app that wakes the watch
     private var phoneDrives: Boolean? = null
@@ -110,7 +137,7 @@ class HeartRateService : Service(), SensorEventListener {
     // Runnable that sends heart rate every 1 second while awake
     private val sendHeartRateRunnable = object : Runnable {
         override fun run() {
-            if (!awake) return
+            if (destroyed || !awake) return
             if (System.currentTimeMillis() > awakeUntil) {
                 Log.d("HeartRateService", "No wake from the phone in time, going to sleep")
                 goToSleep()
@@ -122,6 +149,7 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     private fun handle(action: String) {
+        if (destroyed) return
         // a message from the phone means its app speaks the protocol
         setPhoneDrives(true, "message from the phone")
         when (action) {
@@ -131,10 +159,11 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     private fun applyStart(reason: String) {
+        if (destroyed) return
         val drives = phoneDrives == true
         when (reason) {
             ACTION_SLEEP -> goToSleep()
-            ACTION_WAKE -> wakeUp(PHONE_WAKE_MS)
+            ACTION_WAKE, ACTION_START -> wakeUp(PHONE_WAKE_MS)
             // restarted by the system after a kill (null intent): asleep until the phone asks,
             // or awake as before with an older phone app
             START_RESTART -> if (drives) updateNotification() else wakeUpForever()
@@ -150,6 +179,7 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     private fun setPhoneDrives(drives: Boolean, why: String) {
+        if (destroyed) return
         val before = phoneDrives
         phoneDrives = drives
         if (before == drives) return
@@ -190,7 +220,7 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     private fun startSensing() {
-        if (awake) return
+        if (destroyed || awake) return
         awake = true
         if (!wakeLock.isHeld) wakeLock.acquire()
         val manager = sensorManager
@@ -250,13 +280,14 @@ class HeartRateService : Service(), SensorEventListener {
     }
 
     override fun onDestroy() {
+        destroyed = true
         super.onDestroy()
         instance = null
         awake = false
         Wearable.getCapabilityClient(this).removeListener(capabilityListener)
 
-        // Stop periodic heart rate updates
-        handler.removeCallbacks(sendHeartRateRunnable)
+        // Stop periodic heart rate updates and drop anything still queued
+        handler.removeCallbacksAndMessages(null)
 
         // Release wake lock
         if (wakeLock.isHeld) {
@@ -272,10 +303,13 @@ class HeartRateService : Service(), SensorEventListener {
 
         val reason = when {
             intent == null -> START_RESTART
-            intent.action == ACTION_SLEEP || intent.action == ACTION_WAKE -> intent.action!!
+            intent.action == ACTION_SLEEP || intent.action == ACTION_WAKE ||
+                intent.action == ACTION_START -> intent.action!!
             else -> START_MANUAL
         }
-        if (reason == ACTION_SLEEP || reason == ACTION_WAKE) setPhoneDrives(true, "started by the phone")
+        // opened by hand or a new workout: a STOP pressed earlier no longer applies
+        if (reason == START_MANUAL || reason == ACTION_START) setStoppedByHand(this, false)
+        if (reason != START_MANUAL && reason != START_RESTART) setPhoneDrives(true, "started by the phone")
         if (phoneDrives == null) {
             // the capability check started in onCreate answers in a moment
             pendingStart = reason
