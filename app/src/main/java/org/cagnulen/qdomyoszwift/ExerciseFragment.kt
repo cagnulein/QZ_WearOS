@@ -125,7 +125,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
 
             if(binding.exit.text == "STOP") {
                 HeartRateService.setStoppedByHand(requireContext(), true)
-                MainActivity.serviceIntent?.let { requireContext().stopService(it) }
+                requireContext().stopService(Intent(requireContext(), HeartRateService::class.java))
                 binding.exit.text = "START"
             } else {
                 binding.exit.text = "STOP"
