@@ -152,6 +152,9 @@ class HeartRateService : Service(), SensorEventListener {
 
     private fun handle(action: String) {
         if (destroyed) return
+        // Recheck on the main thread: STOP may have happened after the listener queued this.
+        if (action == ACTION_WAKE && stoppedByHand(this)) return
+        if (action == ACTION_START) setStoppedByHand(this, false)
         // a message from the phone means its app speaks the protocol
         setPhoneDrives(true, "message from the phone")
         when (action) {
@@ -165,7 +168,8 @@ class HeartRateService : Service(), SensorEventListener {
         val drives = phoneDrives == true
         when (reason) {
             ACTION_SLEEP -> goToSleep()
-            ACTION_WAKE, ACTION_START -> wakeUp(PHONE_WAKE_MS)
+            ACTION_WAKE -> if (!stoppedByHand(this)) wakeUp(PHONE_WAKE_MS) else Unit
+            ACTION_START -> wakeUp(PHONE_WAKE_MS)
             // restarted by the system after a kill (null intent): asleep until the phone asks,
             // or awake as before with an older phone app
             START_RESTART -> if (drives) updateNotification() else wakeUpForever()
@@ -308,6 +312,11 @@ class HeartRateService : Service(), SensorEventListener {
             intent.action == ACTION_SLEEP || intent.action == ACTION_WAKE ||
                 intent.action == ACTION_START -> intent.action!!
             else -> START_MANUAL
+        }
+        // A WAKE may have been queued as a service start just before manual STOP.
+        if (reason == ACTION_WAKE && stoppedByHand(this)) {
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
         // opened by hand or a new workout: a STOP pressed earlier no longer applies
         if (reason == START_MANUAL || reason == ACTION_START) setStoppedByHand(this, false)
