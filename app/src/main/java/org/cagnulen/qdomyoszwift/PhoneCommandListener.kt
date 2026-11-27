@@ -21,13 +21,13 @@ class PhoneCommandListener : WearableListenerService() {
             else -> return
         }
         Log.d(TAG, "phone says ${event.path}")
-        if (HeartRateService.command(action)) return
-        if (action == HeartRateService.ACTION_SLEEP) return
-        // STOP was pressed on the watch during this workout: only the next workout's start counts
+        // Check before forwarding to a service that may still be shutting down.
         if (action == HeartRateService.ACTION_WAKE && HeartRateService.stoppedByHand(this)) {
             Log.d(TAG, "stopped on the watch, keep-alive ignored")
             return
         }
+        if (HeartRateService.command(action)) return
+        if (action == HeartRateService.ACTION_SLEEP) return
 
         // Service not running (watch rebooted, or STOP pressed on the watch): try to start it.
         // Android may refuse a foreground start from the background; then QZ has to be
