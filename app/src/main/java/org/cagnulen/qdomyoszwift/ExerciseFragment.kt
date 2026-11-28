@@ -115,9 +115,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             mSensorManager = requireActivity().getSystemService(Context.SENSOR_SERVICE) as SensorManager
             mSensors =
                 mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
-            mSensorManager.registerListener(
-                this, mSensors, SensorManager.SENSOR_DELAY_FASTEST
-            )
+            // registered only while HeartRateService is awake, see syncLegacySensor()
+            syncLegacySensor()
         }
 
         binding.exit.setOnClickListener {
@@ -125,7 +124,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             val FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE : Int = 0x10
 
             if(binding.exit.text == "STOP") {
-                MainActivity.serviceIntent?.let { requireContext().stopService(it) }
+                HeartRateService.setStoppedByHand(requireContext(), true)
+                requireContext().stopService(Intent(requireContext(), HeartRateService::class.java))
                 binding.exit.text = "START"
             } else {
                 binding.exit.text = "STOP"
@@ -181,6 +181,10 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         super.onDestroyView()
         // Unbind from the service.
         handler.removeCallbacks(metricsUpdateRunnable)
+        if (legacySensorOn) {
+            mSensorManager.unregisterListener(this)
+            legacySensorOn = false
+        }
         ExerciseService.unbindService(requireContext().applicationContext, serviceConnection)
         _binding = null
     }
@@ -295,8 +299,24 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    // Watches before Wear OS 3 (API < 30) also read the sensor here; that follows the service,
+    // so the sensor is off while the service sleeps between workouts
+    private var legacySensorOn = false
+
+    private fun syncLegacySensor() {
+        if (!android9) return
+        val wanted = HeartRateService.isAwake && mSensors != null
+        if (wanted == legacySensorOn) return
+        legacySensorOn = wanted
+        if (wanted)
+            mSensorManager.registerListener(this, mSensors, SensorManager.SENSOR_DELAY_FASTEST)
+        else
+            mSensorManager.unregisterListener(this)
+    }
+
     private val metricsUpdateRunnable = object : Runnable {
         override fun run() {
+            syncLegacySensor()
             updateMetrics(null)
             handler.postDelayed(this, 1000) // Run every second
         }
@@ -333,11 +353,7 @@ class ExerciseFragment : Fragment(), SensorEventListener {
             )
         }
 
-        try {
-            Tasks.await(task)
-        } catch (exception: Exception) {
-            // Handle any exceptions that might occur while awaiting the task
-        }
+        // asynchronous: this runs on the main thread, where Tasks.await is not allowed
     }
 
     private fun updateLaps(laps: Int) {
@@ -402,9 +418,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
     }
 
     private fun performOneTimeUiUpdate() {
-        val service = checkNotNull(serviceConnection.exerciseService) {
-            "Failed to achieve ExerciseService instance"
-        }
+        // ambient mode can fire before ExerciseService is bound; skip instead of crashing
+        val service = serviceConnection.exerciseService ?: return
         updateExerciseStatus(service.exerciseState.value)
         updateLaps(service.exerciseLaps.value)
 
@@ -459,9 +474,8 @@ class ExerciseFragment : Fragment(), SensorEventListener {
         }
 
         private fun readHeartRate() {
-            val service = checkNotNull(serviceConnection.exerciseService) {
-                "Failed to achieve ExerciseService instance"
-            }
+            // ambient mode can fire before ExerciseService is bound; skip instead of crashing
+            val service = serviceConnection.exerciseService ?: return
             updateExerciseStatus(service.exerciseState.value)
             updateLaps(service.exerciseLaps.value)
 

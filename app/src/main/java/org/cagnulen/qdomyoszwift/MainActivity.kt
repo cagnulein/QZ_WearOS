@@ -108,12 +108,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main), AmbientCallbackP
         installSplashScreen()
         super.onCreate(savedInstanceState)
         startHeartRateService()
-        val wakeLock: PowerManager.WakeLock =
-            (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-                newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag").apply {
-                    acquire()
-                }
-            }
+        // No wake lock here: HeartRateService holds one only while the phone has it awake.
+        // The old one was never released and kept the watch CPU on as long as QZ lived.
     }
 
     private fun hasBasePermissions(): Boolean {
